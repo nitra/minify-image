@@ -1,5 +1,7 @@
-export function run () {
-    console.log('hi')
-    return "Cli Run"
+exports.run = async function (args: string[]) {
+    console.log(args)
+
+    // find all PNG
+    return 'foo'
   }
   
