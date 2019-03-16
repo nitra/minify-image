@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1466px" height="2003px" viewBox="0 0 1466 2003" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.2 (67145) - http://www.bohemiancoding.com/sketch -->
+    <title>Artboard</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="18.9406073%" y1="-32.73796%" x2="175.713984%" y2="174.989579%" id="linearGradient-1">
+            <stop stop-color="#6957FF" offset="0%"></stop>
+            <stop stop-color="#98BAFE" offset="99.0298874%"></stop>
+            <stop stop-color="#ADE5FE" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="18.9676348%" y1="35.8176389%" x2="148.809564%" y2="158.548244%" id="linearGradient-2">
+            <stop stop-color="#6957FF" offset="0%"></stop>
+            <stop stop-color="#98BAFE" offset="97.6710968%"></stop>
+            <stop stop-color="#ADE5FE" offset="100%"></stop>
+        </linearGradient>
+        <path d="M1526.5,461.330992 L1526.5,1421.97571 L1097,1938.16292 C1071.2487,1958.30533 1052.5,1971.16292 1019,1966.66292 C996.666667,1963.66292 658.333333,1820.60314 4,1537.48357 L0.5,312.5 L360.968985,70.3142607 C389.252333,47.3902747 427.759528,41.6488085 461.5,55.3249733 L1464.06484,576.907451 C1501.8055,592.205029 1526.5,420.607861 1526.5,461.330992 Z" id="path-3"></path>
+    </defs>
+    <g id="Artboard" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-92">
+            <path d="M1524.5,502.583678 L1524.5,1604.61776 L1099.09786,1969.27305 C1073.34656,1989.41546 1050.2467,2008.88654 1010.12335,1999.83967 C983.374449,1993.80841 647.333333,1906.62612 2,1738.29279 L2,288.482999 L357.968985,22.3142607 C386.252333,-0.609725288 424.759528,-6.35119149 458.5,7.32497325 L1462.06484,409.907451 C1499.8055,425.205029 1524.5,461.860547 1524.5,502.583678 Z" id="Mask" fill="url(#linearGradient-1)" fill-rule="nonzero"></path>
+            <mask id="mask-4" fill="white">
+                <use xlink:href="#path-3"></use>
+            </mask>
+            <use id="Mask-Copy-3" fill="url(#linearGradient-2)" fill-rule="nonzero" xlink:href="#path-3"></use>
+        </g>
+    </g>
+</svg>

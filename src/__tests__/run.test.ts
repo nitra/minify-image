@@ -1,8 +1,9 @@
-const { run } = require('../index');
+const { run } = require('../index')
 
+jest.setTimeout(30000)
 
 it('works with async/await', async () => {
-  expect.assertions(1);
-  const data = await run(["123"]);
-  expect(data).toEqual('foo');
-});
+  // expect.assertions(1);
+  const data = await run(['--write', '-v'])
+  expect(data).toEqual('success')
+})
