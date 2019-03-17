@@ -13,7 +13,7 @@
     "build": "pack build",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json",
-    "coveralls": "jest --config jestconfig.json --coverage && cat ./tests/coverage/lcov.info | coveralls"
+    "coveralls": "jest --config jestconfig.json --coverage --coverageReporters=text-lcov | coveralls"
   },
   "repository": {
     "type": "git",
