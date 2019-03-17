@@ -1,6 +1,6 @@
 {
   "name": "@nitra/minify-image",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "minify images (PNG, JPEG, GIF, SVG)",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
