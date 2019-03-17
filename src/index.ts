@@ -18,7 +18,7 @@ const optionDefinitions = [
   { name: 'verbose', alias: 'v', type: Boolean, defaultValue: false }
 ]
 
-exports.run = async function(args: string[]) {
+exports.run = async (args: string[]) => {
   const options = commandLineArgs(optionDefinitions, {
     argv: args
   })
@@ -69,7 +69,7 @@ exports.run = async function(args: string[]) {
   return 'success'
 }
 
-async function compress(plugins: any, images: [], options: any) {
+async function compress(imageminPlugins: any, images: [], options: any) {
   let totalSaving = 0
 
   for (const imagePath of images) {
@@ -78,7 +78,7 @@ async function compress(plugins: any, images: [], options: any) {
 
     // compress PNG image
     const compressedImage = await imagemin.buffer(image, {
-      plugins: plugins
+      plugins: imageminPlugins
     })
 
     log.info(`${imagePath} original size: ${image.length}, compressed size: ${compressedImage.length}`)
