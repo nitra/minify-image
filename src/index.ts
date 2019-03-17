@@ -54,6 +54,11 @@ interface IOption {
   help: boolean
 }
 
+const globOptions = {
+  case: false,
+  ignore: ['**/node_modules/**', '**/vendor/**']
+}
+
 exports.run = async (args: string[]) => {
   let options: IOption
   try {
@@ -77,22 +82,22 @@ exports.run = async (args: string[]) => {
   let totalSaving = 0
 
   // Find all PNGs
-  const pngImages = await fg([`${options.src}/**/*.png`], { case: false, ignore: ['**/node_modules/**'] })
+  const pngImages = await fg([`${options.src}/**/*.png`], globOptions)
   // Compress all PNGs
   totalSaving = await compress([imageminPngquant({ strip: true }), imageminZopfli({ more: true })], pngImages, options)
 
   // Find all JPEGs
-  const jpegImages = await fg([`${options.src}/**/*.(jpg|jpeg)`], { case: false, ignore: ['**/node_modules/**'] })
+  const jpegImages = await fg([`${options.src}/**/*.(jpg|jpeg)`], globOptions)
   // Compress all JPEGs
   totalSaving += await compress([imageminMozjpeg()], jpegImages, options)
 
   // Find all GIFs
-  const gifImages = await fg([`${options.src}/**/*.gif`], { case: false, ignore: ['**/node_modules/**'] })
+  const gifImages = await fg([`${options.src}/**/*.gif`], globOptions)
   // Compress all GIFs
   totalSaving += await compress([imageminGifsicle()], gifImages, options)
 
   // Find all SVGs
-  const svgImages = await fg([`${options.src}/**/*.svg`], { case: false, ignore: ['**/node_modules/**'] })
+  const svgImages = await fg([`${options.src}/**/*.svg`], globOptions)
   // Compress all SVGs
   totalSaving += await compress(
     [
