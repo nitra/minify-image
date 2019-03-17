@@ -1,6 +1,6 @@
 const { run } = require('../index')
 
-jest.setTimeout(30000)
+jest.setTimeout(60000)
 
 it('works with async/await', async () => {
   // expect.assertions(1);
