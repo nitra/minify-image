@@ -9,7 +9,9 @@ const imageminPngquant = require('imagemin-pngquant')
 const imageminMozjpeg = require('imagemin-mozjpeg')
 const imageminGifsicle = require('imagemin-gifsicle')
 const imageminSvgo = require('imagemin-svgo')
+const flatCache = require('flat-cache')
 const fs = require('fs')
+const { createHash } = require('crypto')
 const prettyBytes = require('pretty-bytes')
 const calcPercent = require('calc-percent')
 const commandLineArgs = require('command-line-args')
@@ -141,10 +143,28 @@ async function compress(imageminPlugins: any[], images: string[], options: IOpti
     compressed: 0,
     orig: 0
   }
+  // loads the cache, if one does not exists for the given
+  // Id a new one will be prepared to be created
+  let cache
+  if (options.write) {
+    cache = flatCache.load('minify-image')
+  }
 
   for (const imagePath of images) {
     // read image
     const image = fs.readFileSync(imagePath)
+    totalSaving.orig += image.length
+
+    if (options.write) {
+      const hashKey = createHash('sha1')
+        .update(image)
+        .digest('base64')
+
+      if (cache.getKey(hashKey)) {
+        log.info(`${imagePath} allready compressed, hash: ${hashKey}`)
+        continue
+      }
+    }
 
     // compress PNG image
     const compressedImage = await imagemin.buffer(image, {
@@ -162,12 +182,22 @@ async function compress(imageminPlugins: any[], images: string[], options: IOpti
       fs.writeFileSync(imagePath, compressedImage)
       log.debug(`${imagePath} compressed`)
 
+      // sets a key on the cache
+      const hashKeyCompressed = createHash('sha1')
+        .update(compressedImage)
+        .digest('base64')
+      log.debug(`${hashKeyCompressed} hash`)
+      cache.setKey(hashKeyCompressed, 1)
+
       totalSaving.compressed += image.length - compressedImage.length
     } else if (!options.write) {
       totalSaving.compressed += image.length - compressedImage.length
     }
+  }
 
-    totalSaving.orig += image.length
+  if (options.write) {
+    log.debug(`save cache to disk`)
+    cache.save(true)
   }
 
   return totalSaving
