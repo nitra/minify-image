@@ -180,14 +180,15 @@ async function compress(imageminPlugins: any[], images: string[], options: IOpti
     // if result + 15% < original
     if (options.write && compressedImage.length * 1.15 < image.length) {
       fs.writeFileSync(imagePath, compressedImage)
-      log.debug(`${imagePath} compressed`)
 
       // sets a key on the cache
       const hashKeyCompressed = createHash('sha1')
         .update(compressedImage)
         .digest('base64')
-      log.debug(`${hashKeyCompressed} hash`)
+
       cache.setKey(hashKeyCompressed, 1)
+
+      log.debug(`${imagePath} compressed, ${hashKeyCompressed} hash`)
 
       totalSaving.compressed += image.length - compressedImage.length
     } else if (!options.write) {

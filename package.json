@@ -12,7 +12,8 @@
     "postversion": "git push && git push --tags",
     "build": "pack build",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
-    "lint": "tslint -p tsconfig.json"
+    "lint": "tslint -p tsconfig.json",
+    "coveralls": "jest --config jestconfig.json --coverage && cat ./tests/coverage/lcov.info | coveralls"
   },
   "repository": {
     "type": "git",
@@ -52,6 +53,7 @@
     "@pika/plugin-ts-standard-pkg": "^0.3.14",
     "@types/command-line-args": "^5.0.0",
     "@types/jest": "^24.0.11",
+    "coveralls": "^3.0.3",
     "jest": "^24.5.0",
     "prettier": "^1.16.4",
     "ts-jest": "^24.0.0",
