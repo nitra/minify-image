@@ -10,6 +10,8 @@ const imageminMozjpeg = require('imagemin-mozjpeg')
 const imageminGifsicle = require('imagemin-gifsicle')
 const imageminSvgo = require('imagemin-svgo')
 const fs = require('fs')
+const prettyBytes = require('pretty-bytes')
+const calcPercent = require('calc-percent')
 const commandLineArgs = require('command-line-args')
 const commandLineUsage = require('command-line-usage')
 const sections = [
@@ -54,6 +56,11 @@ interface IOption {
   help: boolean
 }
 
+interface ISaving {
+  orig: number
+  compressed: number
+}
+
 const globOptions = {
   case: false,
   ignore: ['**/node_modules/**', '**/vendor/**']
@@ -79,27 +86,35 @@ exports.run = async (args: string[]) => {
     return
   }
 
-  let totalSaving = 0
+  let totalSaving: ISaving
+  let orig = 0
+  let compressed = 0
 
   // Find all PNGs
   const pngImages = await fg([`${options.src}/**/*.png`], globOptions)
   // Compress all PNGs
   totalSaving = await compress([imageminPngquant({ strip: true }), imageminZopfli({ more: true })], pngImages, options)
+  orig = totalSaving.orig
+  compressed = totalSaving.compressed
 
   // Find all JPEGs
   const jpegImages = await fg([`${options.src}/**/*.(jpg|jpeg)`], globOptions)
   // Compress all JPEGs
-  totalSaving += await compress([imageminMozjpeg()], jpegImages, options)
+  totalSaving = await compress([imageminMozjpeg()], jpegImages, options)
+  orig += totalSaving.orig
+  compressed += totalSaving.compressed
 
   // Find all GIFs
   const gifImages = await fg([`${options.src}/**/*.gif`], globOptions)
   // Compress all GIFs
-  totalSaving += await compress([imageminGifsicle()], gifImages, options)
+  totalSaving = await compress([imageminGifsicle()], gifImages, options)
+  orig += totalSaving.orig
+  compressed += totalSaving.compressed
 
   // Find all SVGs
   const svgImages = await fg([`${options.src}/**/*.svg`], globOptions)
   // Compress all SVGs
-  totalSaving += await compress(
+  totalSaving = await compress(
     [
       imageminSvgo({
         plugins: [{ removeViewBox: false }]
@@ -108,19 +123,24 @@ exports.run = async (args: string[]) => {
     svgImages,
     options
   )
+  orig += totalSaving.orig
+  compressed += totalSaving.compressed
 
-  const totalSavingString = `${Math.ceil(totalSaving / 1000)} Kb`
+  log.info(`All image size: ${prettyBytes(orig)}`)
   if (options.write) {
-    log.info(`Images optimized, saving: ${totalSavingString}`)
+    log.info(`Images optimized, saving: ${prettyBytes(compressed)}, ${calcPercent(compressed, orig)}%`)
   } else {
-    log.info(`Estimated saving: ${totalSavingString}`)
+    log.info(`Estimated saving: ${prettyBytes(compressed)}, ${calcPercent(compressed, orig)}%`)
   }
 
   return 'success'
 }
 
-async function compress(imageminPlugins: any[], images: string[], options: IOption) {
-  let totalSaving = 0
+async function compress(imageminPlugins: any[], images: string[], options: IOption): Promise<ISaving> {
+  const totalSaving: ISaving = {
+    compressed: 0,
+    orig: 0
+  }
 
   for (const imagePath of images) {
     // read image
@@ -131,17 +151,23 @@ async function compress(imageminPlugins: any[], images: string[], options: IOpti
       plugins: imageminPlugins
     })
 
-    log.info(`${imagePath} original size: ${image.length}, compressed size: ${compressedImage.length}`)
+    log.info(
+      `${imagePath} original size: ${prettyBytes(image.length)}, compressed size: ${prettyBytes(
+        compressedImage.length
+      )}`
+    )
 
     // if result + 15% < original
     if (options.write && compressedImage.length * 1.15 < image.length) {
       fs.writeFileSync(imagePath, compressedImage)
       log.debug(`${imagePath} compressed`)
 
-      totalSaving += image.length - compressedImage.length
+      totalSaving.compressed += image.length - compressedImage.length
     } else if (!options.write) {
-      totalSaving += image.length - compressedImage.length
+      totalSaving.compressed += image.length - compressedImage.length
     }
+
+    totalSaving.orig += image.length
   }
 
   return totalSaving
