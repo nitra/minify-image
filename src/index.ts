@@ -179,7 +179,7 @@ async function compress(imageminPlugins: any[], images: string[], options: IOpti
 
     if (options.write) {
       let hashKey
-      
+
       // if result + 15% < original
       if (compressedImage.length * 1.15 < image.length) {
         fs.writeFileSync(imagePath, compressedImage)
