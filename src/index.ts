@@ -68,7 +68,7 @@ const globOptions = {
   ignore: ['**/node_modules/**', '**/vendor/**']
 }
 
-exports.run = async (args: string[]) => {
+export async function run(args: string[]) {
   let options: IOption
   try {
     options = commandLineArgs(optionDefinitions, {
@@ -177,21 +177,30 @@ async function compress(imageminPlugins: any[], images: string[], options: IOpti
       )}`
     )
 
-    // if result + 15% < original
-    if (options.write && compressedImage.length * 1.15 < image.length) {
-      fs.writeFileSync(imagePath, compressedImage)
+    if (options.write) {
+      let hashKey
+      
+      // if result + 15% < original
+      if (compressedImage.length * 1.15 < image.length) {
+        fs.writeFileSync(imagePath, compressedImage)
 
-      // sets a key on the cache
-      const hashKeyCompressed = createHash('sha1')
-        .update(compressedImage)
-        .digest('base64')
+        // hash of compressed image for future ignore
+        hashKey = createHash('sha1')
+          .update(compressedImage)
+          .digest('base64')
 
-      cache.setKey(hashKeyCompressed, 1)
+        log.debug(`${imagePath} compressed, ${hashKey} hash`)
 
-      log.debug(`${imagePath} compressed, ${hashKeyCompressed} hash`)
+        totalSaving.compressed += image.length - compressedImage.length
+      } else {
+        // hash of original image for future ignore
+        hashKey = createHash('sha1')
+          .update(image)
+          .digest('base64')
+      }
 
-      totalSaving.compressed += image.length - compressedImage.length
-    } else if (!options.write) {
+      cache.setKey(hashKey, 1)
+    } else {
       totalSaving.compressed += image.length - compressedImage.length
     }
   }
