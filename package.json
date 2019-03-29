@@ -13,7 +13,9 @@
     "build": "pack build",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json",
-    "coveralls": "jest --config jestconfig.json --coverage --coverageReporters=text-lcov | coveralls"
+    "coveralls": "jest --config jestconfig.json --coverage --coverageReporters=text-lcov | coveralls",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "repository": {
     "type": "git",
@@ -74,6 +76,8 @@
     "imagemin-svgo": "^7.0.0",
     "imagemin-zopfli": "^6.0.0",
     "loglevel-colored-level-prefix": "^1.0.0",
-    "pretty-bytes": "^5.1.0"
-  }
+    "pretty-bytes": "^5.1.0",
+    "snyk": "^1.143.3"
+  },
+  "snyk": true
 }
