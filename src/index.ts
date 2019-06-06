@@ -1,5 +1,4 @@
-const getLogger = require('loglevel-colored-level-prefix')
-const log = getLogger()
+const log = require('loglevel-colored-level-prefix')()
 log.debug('START in DEBUG MODE')
 
 const fg = require('fast-glob')
