@@ -1,6 +1,6 @@
 {
   "name": "@nitra/minify-image",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "minify images (PNG, JPEG, GIF, SVG)",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -48,32 +48,32 @@
     ]
   },
   "devDependencies": {
-    "@pika/plugin-build-node": "^0.3.14",
-    "@pika/plugin-simple-bin": "^0.3.14",
-    "@pika/plugin-ts-standard-pkg": "^0.3.14",
+    "@pika/plugin-build-node": "^0.4.0",
+    "@pika/plugin-simple-bin": "^0.4.0",
+    "@pika/plugin-ts-standard-pkg": "^0.4.0",
     "@types/command-line-args": "^5.0.0",
-    "@types/jest": "^24.0.11",
-    "coveralls": "^3.0.3",
-    "jest": "^24.5.0",
-    "prettier": "^1.16.4",
-    "ts-jest": "^24.0.0",
-    "tslint": "^5.14.0",
+    "@types/jest": "^24.0.13",
+    "coveralls": "^3.0.4",
+    "jest": "^24.8.0",
+    "prettier": "^1.17.1",
+    "ts-jest": "^24.0.2",
+    "tslint": "^5.17.0",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^3.3.3333"
+    "typescript": "^3.5.1"
   },
   "dependencies": {
     "calc-percent": "^1.0.1",
-    "command-line-args": "^5.0.2",
+    "command-line-args": "^5.1.1",
     "command-line-usage": "^5.0.5",
-    "fast-glob": "^2.2.6",
+    "fast-glob": "^2.2.7",
     "flat-cache": "^2.0.1",
     "imagemin": "^6.1.0",
     "imagemin-gifsicle": "^6.0.1",
-    "imagemin-mozjpeg": "^6.0.0",
-    "imagemin-pngquant": "^7.0.0",
+    "imagemin-mozjpeg": "^8.0.0",
+    "imagemin-pngquant": "^8.0.0",
     "imagemin-svgo": "^7.0.0",
     "imagemin-zopfli": "^6.0.0",
     "loglevel-colored-level-prefix": "^1.0.0",
-    "pretty-bytes": "^5.1.0"
+    "pretty-bytes": "^5.2.0"
   }
 }
