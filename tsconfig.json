@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "types" : [ "node", "jest" ],
-    "target": "es2018",
+    "target": "es2019",
     "module": "esnext",
     "declaration": true,
     "outDir": "out",
