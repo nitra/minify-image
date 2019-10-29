@@ -48,32 +48,32 @@
     ]
   },
   "devDependencies": {
-    "@pika/plugin-build-node": "^0.4.0",
-    "@pika/plugin-simple-bin": "^0.4.0",
-    "@pika/plugin-ts-standard-pkg": "^0.4.0",
+    "@pika/plugin-build-node": "^0.7.1",
+    "@pika/plugin-simple-bin": "^0.7.1",
+    "@pika/plugin-ts-standard-pkg": "^0.7.1",
     "@types/command-line-args": "^5.0.0",
-    "@types/jest": "^24.0.15",
-    "coveralls": "^3.0.4",
-    "jest": "^24.8.0",
+    "@types/jest": "^24.0.20",
+    "coveralls": "^3.0.7",
+    "jest": "^24.9.0",
     "prettier": "^1.18.2",
-    "ts-jest": "^24.0.2",
-    "tslint": "^5.18.0",
+    "ts-jest": "^24.1.0",
+    "tslint": "^5.20.0",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^3.5.2"
+    "typescript": "^3.6.4"
   },
   "dependencies": {
     "calc-percent": "^1.0.1",
     "command-line-args": "^5.1.1",
-    "command-line-usage": "^5.0.5",
-    "fast-glob": "^3.0.2",
+    "command-line-usage": "^6.0.2",
+    "fast-glob": "^3.1.0",
     "flat-cache": "^2.0.1",
-    "imagemin": "^6.1.0",
+    "imagemin": "^7.0.0",
     "imagemin-gifsicle": "^6.0.1",
     "imagemin-mozjpeg": "6.0.0",
     "imagemin-pngquant": "^8.0.0",
     "imagemin-svgo": "^7.0.0",
     "imagemin-zopfli": "^6.0.0",
     "loglevel-colored-level-prefix": "^1.0.0",
-    "pretty-bytes": "^5.2.0"
+    "pretty-bytes": "^5.3.0"
   }
 }
