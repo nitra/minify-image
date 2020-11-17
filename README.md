@@ -12,16 +12,10 @@
 
 Minify images in directory, if compressed size lower than 15%
 
-## Installation:
-
-```bash
-yarn add minify-image
-```
-
 ## Example run:
 
 ```bash
-yarn run minify-image --src=.
+npx @nitra/minify-image --src=.
 ```
 
 ## Options
