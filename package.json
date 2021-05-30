@@ -70,7 +70,7 @@
     "flat-cache": "^2.0.1",
     "imagemin": "^7.0.1",
     "imagemin-gifsicle": "^7.0.0",
-    "imagemin-mozjpeg": "6.0.0",
+    "imagemin-mozjpeg": "8.0.0",
     "imagemin-pngquant": "^9.0.0",
     "imagemin-svgo": "^8.0.0",
     "imagemin-zopfli": "^7.0.0",
