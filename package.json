@@ -13,7 +13,9 @@
     "build": "pack build",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json",
-    "coveralls": "jest --config jestconfig.json --coverage --coverageReporters=text-lcov | coveralls"
+    "coveralls": "jest --config jestconfig.json --coverage --coverageReporters=text-lcov | coveralls",
+    "prepare": "yarn run snyk-protect",
+    "snyk-protect": "snyk-protect"
   },
   "repository": {
     "type": "git",
@@ -75,6 +77,8 @@
     "imagemin-svgo": "^8.0.0",
     "imagemin-zopfli": "^7.0.0",
     "loglevel-colored-level-prefix": "^1.0.0",
-    "pretty-bytes": "^5.3.0"
-  }
+    "pretty-bytes": "^5.3.0",
+    "@snyk/protect": "latest"
+  },
+  "snyk": true
 }
