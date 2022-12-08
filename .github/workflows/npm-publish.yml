@@ -11,26 +11,23 @@ concurrency:
 
 jobs:
   publish-npm:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - id: secrets
-        uses: google-github-actions/get-secretmanager-secrets@main
-        with:
-          secrets: |-
-            npm-token:nitraai/npm-token
-
       - uses: actions/checkout@v3
-
-      - uses: JS-DevTools/npm-publish@v1
         with:
-          token: ${{ steps.secrets.outputs.npm-token }}
-          access: public
-          check-version: true
-          package: ./npm/package.json
+          # Full git history is needed to get a proper list of changed files within `super-linter` and for Changelog
+          fetch-depth: 0
 
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+
+      - uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          check-version: true
+          package: ./npm/package.json
 
       - name: get-npm-version
         id: package-version
@@ -42,3 +39,13 @@ jobs:
           # from-tag: 'current tag'
           to-tag: HEAD
           allow-unknown: true
+          package-dir: npm/package.json
+
+      - name: 🛎️ Create release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.package-version.outputs.current-version}}
+          # draft: true
+          body: |
+            ${{ steps.Changelog.outputs.changelog }}
