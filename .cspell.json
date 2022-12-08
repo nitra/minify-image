@@ -13,6 +13,10 @@
     "@nitra/cspell-dict/cspell-ext.json"
   ],
   "words": [
+    "gifsicle",
+    "jpegoptim",
+    "mozjpeg",
+    "Pngquant",
     "Zopfli"
   ]
 }

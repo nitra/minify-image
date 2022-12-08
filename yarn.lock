@@ -95,11 +95,14 @@ __metadata:
     flat-cache: ^2.0.1
     imagemin: ^8.0.1
     imagemin-gifsicle: ^7.0.0
+    imagemin-jpegtran: ^7.0.0
     imagemin-mozjpeg: 10.0.0
     imagemin-pngquant: ^9.0.0
     imagemin-svgo: ^10.0.0
     imagemin-zopfli: ^7.0.0
     pretty-bytes: ^5.3.0
+  bin:
+    minify-image: src/index.js
   languageName: unknown
   linkType: soft
 
@@ -2285,6 +2288,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"imagemin-jpegtran@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "imagemin-jpegtran@npm:7.0.0"
+  dependencies:
+    exec-buffer: ^3.0.0
+    is-jpg: ^2.0.0
+    jpegtran-bin: ^5.0.0
+  checksum: 5a48196048dec525b68b24f00d8670897a34d9520d02ba98ffe87a151558e7cb63e24fc75e3fa26108ff6ed6de0a828ba0e1b054f0780f94761e8a63cd531f7f
+  languageName: node
+  linkType: hard
+
 "imagemin-mozjpeg@npm:10.0.0":
   version: 10.0.0
   resolution: "imagemin-mozjpeg@npm:10.0.0"
@@ -2506,6 +2520,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"is-jpg@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "is-jpg@npm:2.0.0"
+  checksum: 3412b631970de183efdda0f9c0ab223c1eb5fee0e8d593f267f93ae3174db7e8d8188023d78decd31b332b24fba2dfff7fe02be25b813a3dc01205a69374855c
+  languageName: node
+  linkType: hard
+
 "is-jpg@npm:^3.0.0":
   version: 3.0.0
   resolution: "is-jpg@npm:3.0.0"
@@ -2685,6 +2706,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jpegtran-bin@npm:^5.0.0":
+  version: 5.0.2
+  resolution: "jpegtran-bin@npm:5.0.2"
+  dependencies:
+    bin-build: ^3.0.0
+    bin-wrapper: ^4.0.0
+    logalot: ^2.0.0
+  bin:
+    jpegtran: cli.js
+  checksum: a770f7cf076c52c06fd8d499d957b68cb2ac036c014de331d328f19976ac5c302455ff0eb5e9be709fe40fbff71d28ece7229620e66a7002e30ae9ab380c549e
+  languageName: node
+  linkType: hard
+
 "js-sdsl@npm:^4.1.4":
   version: 4.2.0
   resolution: "js-sdsl@npm:4.2.0"
@@ -2821,7 +2855,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"logalot@npm:^2.1.0":
+"logalot@npm:^2.0.0, logalot@npm:^2.1.0":
   version: 2.1.0
   resolution: "logalot@npm:2.1.0"
   dependencies:
