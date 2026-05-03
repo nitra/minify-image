@@ -1,0 +1,93 @@
+eslint.config.js
+  0618ff9167306ea6 1-10
+.jscpd.json
+  0618ff9167306ea6 1-7
+npm/types/index.d.ts
+  0618ff9167306ea6 1-2
+.vscode/extensions.json
+  0618ff9167306ea6 1-10
+hk.pkl
+  0618ff9167306ea6 1-12
+.github/workflows/clean-merged-branch.yml
+  0618ff9167306ea6 1-30
+.v8rignore
+  0618ff9167306ea6 1-3
+.oxlintrc.json
+  0618ff9167306ea6 1-387
+.github/zizmor.yml
+  0618ff9167306ea6 1-8
+.gitignore
+  0618ff9167306ea6 14-17
+package.json
+  0618ff9167306ea6 12-13,27
+  597c703d5d915ac5 17
+.github/workflows/lint-ga.yml
+  0618ff9167306ea6 1-35
+.github/workflows/lint-text.yml
+  0618ff9167306ea6 1-52
+.github/workflows/lint-js.yml
+  0618ff9167306ea6 1-43
+bunfig.toml
+  0618ff9167306ea6 1-2
+demo/play.js
+  0618ff9167306ea6 1-59
+.github/workflows/clean-ga-workflows.yml
+  0618ff9167306ea6 1-22
+npm/README.md
+  0618ff9167306ea6 23-51
+npm/CHANGELOG.md
+  0618ff9167306ea6 1-71
+npm/package.json
+  0618ff9167306ea6 3,6,8,10-12,17-24,38-42
+.github/workflows/git-ai.yml
+  0618ff9167306ea6 1-26
+.markdownlint-cli2.jsonc
+  0618ff9167306ea6 1-11
+.cspell.json
+  0618ff9167306ea6 10-11,13,16,18,21-30
+npm/src/index.js
+  0618ff9167306ea6 3-5,9-11,13-15,18,67-126,129-141,143-157,159,161-172,174-175,177-182,187-191,194-195,198-216,218-220,222-225,227-230,232-235,237-240,242-245,247-269
+.vscode/settings.json
+  0618ff9167306ea6 1-59
+.n-cursor.json
+  0618ff9167306ea6 3-4
+.github/workflows/npm-publish.yml
+  0618ff9167306ea6 5-6,15,17-19,21-22,24,26,28-29,31-32,34
+demo/__tests__/run.test.js
+  0618ff9167306ea6 1-177
+.oxfmtrc.json
+  0618ff9167306ea6 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "3b0b39be13bd5affc7553f241276877206cb4bb1",
+  "prompts": {
+    "0618ff9167306ea6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "19a0a7cb-a424-4ee8-828e-475425abb55b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Vitalii Tverdokhlib",
+      "messages": [],
+      "total_additions": 2239,
+      "total_deletions": 622,
+      "accepted_lines": 1476,
+      "overriden_lines": 8
+    },
+    "597c703d5d915ac5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06ef6e45-2b17-47c3-b6aa-6620a2c59a08",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Vitalii Tverdokhlib",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
