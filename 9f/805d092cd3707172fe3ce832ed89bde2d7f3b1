@@ -1,0 +1,55 @@
+npm/src/index.js
+  597c703d5d915ac5 6-7,9-10,12-13,16-21,24-38,40,42-43,46-51,109-118,120,122,126,128,136-138,140,142-154,156,158-160,162-165,167,169-173,175-185,188,192,194-200
+.github/workflows/git-ai.yml
+  c7e4a90b6fd445ad 18
+.cspell.json
+  597c703d5d915ac5 17-18,20-21,24
+npm/package.json
+  597c703d5d915ac5 28,30-31
+  h_9e4b254ff59432 3
+npm/README.md
+  597c703d5d915ac5 5
+npm/CHANGELOG.md
+  597c703d5d915ac5 8-42
+  h_9e4b254ff59432 7
+demo/__tests__/run.test.js
+  597c703d5d915ac5 27,66,71,85,94,118-119,162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "9f805d092cd3707172fe3ce832ed89bde2d7f3b1",
+  "prompts": {
+    "597c703d5d915ac5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06ef6e45-2b17-47c3-b6aa-6620a2c59a08",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Vitalii Tverdokhlib",
+      "messages": [],
+      "total_additions": 201,
+      "total_deletions": 222,
+      "accepted_lines": 160,
+      "overriden_lines": 2
+    },
+    "c7e4a90b6fd445ad": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8643968e-3d45-4559-9b9f-7450d7a426da",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Vitalii Tverdokhlib",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_9e4b254ff59432": {
+      "author": "Vitalii Tverdokhlib"
+    }
+  }
+}
