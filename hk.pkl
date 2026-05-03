@@ -1,0 +1,12 @@
+amends "package://github.com/jdx/hk/releases/download/v1.0.0/hk@1.0.0#/Config.pkl"
+
+hooks {
+  ["pre-commit"] {
+    steps {
+      ["tsc"] {
+        glob = List("npm/src/**/*.js")
+        run = "cd npm && bunx -p typescript tsc src/**/*.js --declaration --allowJs --emitDeclarationOnly --outDir types --skipLibCheck"
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun *)",
+      "Bash(bun run *)",
+      "Bash(bun test *)",
+      "Bash(bunx *)",
+      "Bash(npx --no @nitra/cursor *)",
+      "Bash(npx @nitra/cursor *)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx --no @nitra/cursor stop-hook",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

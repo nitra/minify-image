@@ -2,6 +2,8 @@ name: npm-publish
 
 on:
   push:
+    paths:
+      - 'npm/**'
     branches:
       - main
 
@@ -10,42 +12,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  publish-npm:
+  publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
-          # Full git history is needed to get a proper list of changed files within `super-linter` and for Changelog
-          fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
 
-      - uses: JS-DevTools/npm-publish@v1
+      - name: Publish package
+        uses: JS-DevTools/npm-publish@v4.1.5
         with:
-          token: ${{ secrets.NPM_TOKEN }}
-          access: public
-          check-version: true
-          package: ./npm/package.json
-
-      - name: get-npm-version
-        id: package-version
-        uses: martinbeentjes/npm-get-version-action@master
-
-      - uses: scottbrenner/generate-changelog-action@master
-        id: Changelog
-        with:
-          # from-tag: 'current tag'
-          to-tag: HEAD
-          allow-unknown: true
-          package-dir: npm/package.json
-
-      - name: 🛎️ Create release
-        uses: ncipollo/release-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: v${{ steps.package-version.outputs.current-version}}
-          # draft: true
-          body: |
-            ${{ steps.Changelog.outputs.changelog }}
+          package: npm/package.json

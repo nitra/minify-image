@@ -1,0 +1,103 @@
+---
+description: Оформлення репозиторію для npm модуля
+alwaysApply: true
+version: '1.8'
+---
+
+Bun monorepo: workspace **`npm/`**, кореневий **`package.json`**, **`.github/workflows/`**; опційно **`demo/`**.
+
+## TypeScript declaration (`npm/types`)
+
+Файл **`npm/package.json`** має містити **`"types"`** (шлях до головного `.d.ts` або `.d.mts` під **`./types/…`**) і запис **`"types"`** у **`files`**, щоб npm публікував декларації.
+
+Генерація — через **`tsc`** і **`bunx -p typescript`** (окремий пакет **`typescript`** у `devDependencies` не потрібен).
+
+### Варіант A: є вихідний **`.js`** під **`npm/src/`**
+
+Якщо під **`npm/src`** (рекурсивно) є хоча б один файл **`.js`**:
+
+- **`"types": "./types/index.d.ts"`**;
+- у **hk** на **`pre-commit`** з каталогу **`npm/`** викликай:
+
+```bash
+bunx -p typescript tsc src/**/*.js --declaration --allowJs --emitDeclarationOnly --outDir types --skipLibCheck
+```
+
+Якщо glob не розгортається — **`bash -O globstar`** або **`include`** у **`tsconfig`** з тими самими **`compilerOptions`**.
+
+### Варіант B: немає **`npm/src/**/*.js`** (наприклад лише **`bin/`**, **`scripts/**/*.mjs`**)
+
+Не створюй штучний **`src/index.js`**. Замість цього:
+
+1. Додай **`npm/tsconfig.emit-types.json`** з **`include`** на реальні шляхи (`.js` / `.mjs`), **`compilerOptions`**: **`allowJs`**, **`declaration`**, **`emitDeclarationOnly`**, **`outDir`: `"types"`**, **`skipLibCheck`**: **`true`** (за потреби **`rootDir`**, **`module`**, **`moduleResolution`**).
+2. Після першого **`tsc`** подивись, який **`.d.ts`** / **`.d.mts`** відповідає публічному API, і вкажи його в **`types`** (наприклад **`./types/bin/cli.d.ts`**).
+3. У **hk** на **`pre-commit`** з **`npm/`** викликай **`tsc -p tsconfig.emit-types.json`**. Якщо через імпорти **TypeScript** все одно згенерує зайві **`.d.mts`** у **`types/`**, після **`tsc`** обрізай дерево до потрібного entrypoint (наприклад залиш лише **`types/bin/n-cursor.d.ts`** через **`find`**), щоб у пакеті не збирались декларації внутрішніх модулів.
+
+Файл **`tsconfig.emit-types.json`** тримай у репозиторії для **hk** / локальної генерації; у **`files`** його не додавай, якщо не хочеш публікувати його на **npm**.
+
+## Git hooks: hk + pre-commit
+
+У корені репозиторію — **`hk.pkl`** (або **`.config/hk.pkl`**) з **`["pre-commit"]`** і командою з відповідного варіанту (A або B) вище.
+
+Після додавання **`hk.pkl`**: **`hk install`**.
+
+## Build версія
+
+Після змін у **`npm/`** обовʼязково підвищ **build**-версію в **`npm/package.json`**, але не роби зайвих підвищень: між номером у файлі й тим, що вже збережено в **git** (`HEAD`), має лишатися не більше одного кроку **+1**.
+
+У робочій копії не повинно бути більше одного незбереженого в **git** підвищення **build**-версії за раз.
+
+**Підказка:** щоб не дублювати bump і бачити різницю зі збереженим деревом, перевір `git status npm/package.json` або `git diff HEAD -- npm/package.json` перед другим підвищенням у тій самій гілці / наборі змін.
+
+## CHANGELOG
+
+Разом із підвищенням **build**-версії в **`npm/package.json`** оновлюй **`npm/CHANGELOG.md`** — додавай новий запис із номером версії та коротким описом змін у модулі. Без оновлення `CHANGELOG.md` зміни в `npm/` зливати в `main` не можна.
+
+Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/) (новіші версії зверху, мова — українська). Кожен запис починається з рядка `## [версія] - YYYY-MM-DD` і має одну або кілька секцій: `### Added`, `### Changed`, `### Fixed`, `### Removed`.
+
+Файл **`CHANGELOG.md`** має бути в масиві **`files`** у **`npm/package.json`**, щоб публікувався разом із пакетом.
+
+## npm publish
+
+**`npm-publish.yml`:** push у **`main`**, **`on.push.paths`** з **`npm/**`**, **`JS-DevTools/npm-publish@v4.1.5`**, **`with.package: npm/package.json`**, **`permissions.id-token: write`** (OIDC на npm).
+
+```yaml title=".github/workflows/npm-publish.yml"
+name: npm-publish
+
+on:
+  push:
+    paths:
+      - 'npm/**'
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # КРИТИЧНО для OIDC!
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24' # includes npm@11.6.0
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish package
+        uses: JS-DevTools/npm-publish@v4.1.5
+        with:
+          package: npm/package.json
+```
+
+## Перевірка
+
+`npx @nitra/cursor check npm-module`

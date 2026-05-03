@@ -1,26 +1,28 @@
 {
   "name": "minify-image",
-  "description": "minify images (PNG, JPEG, GIF, SVG)",
   "version": "1.0.0",
-  "type": "module",
+  "description": "minify images (PNG, JPEG, GIF, SVG)",
+  "homepage": "https://github.com/nitra/fastify",
+  "bugs": "https://github.com/nitra/fastify/issues",
+  "license": "MIT",
   "workspaces": [
     "demo",
     "npm"
   ],
-  "bugs": "https://github.com/nitra/fastify/issues",
-  "homepage": "https://github.com/nitra/fastify",
-  "prettier": "@nitra/prettier-config",
-  "eslintConfig": {
-    "extends": [
-      "@nitra"
-    ],
-    "root": true
+  "type": "module",
+  "scripts": {
+    "lint": "bun run lint-js && bun run lint-text && bun run lint-ga && oxfmt .",
+    "lint-js": "bunx oxlint --fix && bunx eslint --fix . && bunx jscpd .",
+    "lint-text": "npx cspell . && bunx markdownlint-cli2 --fix \"**/*.md\" \"**/*.mdc\" && bun ./node_modules/@nitra/cursor/scripts/run-v8r.mjs",
+    "lint-ga": "bunx github-actionlint && uvx zizmor --offline --collect=workflows ."
   },
   "devDependencies": {
-    "@nitra/cspell-dict": "^1.0.70",
-    "@nitra/eslint-config": "^1.0.24",
-    "@nitra/prettier-config": "^1.0.1"
+    "@nitra/cspell-dict": "^2.1.0",
+    "@nitra/cursor": "^1.8.165",
+    "@nitra/eslint-config": "^3.8.0"
   },
-  "license": "MIT",
-  "packageManager": "yarn@3.3.0"
+  "engines": {
+    "bun": ">=1.3",
+    "node": ">=24"
+  }
 }

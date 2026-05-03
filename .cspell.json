@@ -7,16 +7,26 @@
     "**/.git/**",
     ".vscode",
     "report",
-    "yarn.lock"
+    "*.svg",
+    "**/k8s/**/*.yaml"
   ],
-  "import": [
-    "@nitra/cspell-dict/cspell-ext.json"
-  ],
+  "import": ["@nitra/cspell-dict/cspell-ext.json"],
   "words": [
     "gifsicle",
+    "IEND",
     "jpegoptim",
+    "Jpegtran",
     "mozjpeg",
     "Pngquant",
-    "Zopfli"
+    "sonarjs",
+    "Zopfli",
+    "syscall",
+    "Регекс",
+    "коміт",
+    "підвантажується",
+    "фікстура",
+    "фікстури",
+    "фікстурі",
+    "чанк"
   ]
 }

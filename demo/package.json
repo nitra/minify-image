@@ -1,0 +1,12 @@
+{
+  "name": "demo",
+  "type": "module",
+  "scripts": {
+    "start": "bun ../npm/src/index.js",
+    "test": "bun test"
+  },
+  "engines": {
+    "bun": ">=1.3",
+    "node": ">=24"
+  }
+}

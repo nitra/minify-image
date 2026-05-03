@@ -1,0 +1,8 @@
+# https://docs.zizmor.sh/configuration/
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        '*': ref-pin
+  template-injection:
+    disable: true

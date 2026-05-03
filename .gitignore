@@ -12,3 +12,6 @@ node_modules/
 .pnp.*
 
 .env.secret
+
+# Manual demo playground (demo/play.js writes here)
+demo/play-output/
