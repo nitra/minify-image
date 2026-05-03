@@ -4,6 +4,42 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
+## [3.0.0] - 2026-05-03
+
+### Changed
+
+- Рушій компресії: `imagemin` → `sharp` (libvips) для PNG/JPEG/GIF; SVG —
+  через `svgo` напряму. PNG: `palette: true, effort: 10, compressionLevel: 9`
+  (≈pngquant + zopfli). JPEG: `mozjpeg: true, progressive: true` одним проходом
+  (раніше було два — mozjpeg і jpegtran). GIF: `animated: true, effort: 10`.
+- JPEG-стадія тепер одна — підсумковий `All image size` більше не подвоює
+  розмір JPEG-файлів через cache-hit на другому проході.
+- Файли обробляються **паралельно** через `p-limit` із межею
+  `os.availableParallelism()` (раніше — послідовний `for…of await`). Sharp
+  переведено в режим `concurrency(1)`: один потік на операцію, N паралельних
+  операцій — рекомендований патерн sharp для batch-обробки. Прискорення
+  ≈ кількість CPU на репозиторіях зі значною кількістю зображень.
+- Один `glob('**/*.{png,jpg,jpeg,gif,svg}')` замість чотирьох окремих —
+  один прохід ФС, вибір компресора за розширенням файлу.
+- CLI-парсер: `command-line-args` + `command-line-usage` → вбудований
+  `node:util#parseArgs`. Поверхня прапорців не змінилась: `--write`,
+  `--src=<dir>` (або позиційний), `-h/--help`.
+
+### Added
+
+- `sharp.cache(false)` на старті — не тримати LRU декодованих зображень
+  (у batch-обробці повторного декодування не буває).
+- Залежності: `sharp ^0.34.1`, `svgo ^3.3.2`, `p-limit ^7.1.1`.
+
+### Removed
+
+- Залежності: `imagemin`, `imagemin-gifsicle`, `imagemin-jpegtran`,
+  `imagemin-mozjpeg`, `imagemin-pngquant`, `imagemin-svgo`, `imagemin-zopfli`
+  — вся екосистема замінена на `sharp` (один prebuilt-бінарник на платформу)
+  і `svgo` (pure-JS).
+- Залежності: `command-line-args`, `command-line-usage` — заміна на
+  `node:util#parseArgs` (мінус 4 транзитивні пакети, швидший `npx`-старт).
+
 ## [2.0.5] - 2026-05-02
 
 ### Added

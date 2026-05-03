@@ -1,66 +1,53 @@
 #!/usr/bin/env node
 
 import calcPercent from 'calc-percent'
-import commandLineArgs from 'command-line-args'
-import commandLineUsage from 'command-line-usage'
 import consola from 'consola'
-import imagemin from 'imagemin'
-import imageminGifsicle from 'imagemin-gifsicle'
-import imageminJpegtran from 'imagemin-jpegtran'
-import imageminMozjpeg from 'imagemin-mozjpeg'
-import imageminPngquant from 'imagemin-pngquant'
-import imageminSvgo from 'imagemin-svgo'
-import imageminZopfli from 'imagemin-zopfli'
 import { readFileSync, statSync, writeFileSync } from 'node:fs'
-import { join, relative, resolve } from 'node:path'
+import { availableParallelism } from 'node:os'
+import { extname, join, relative, resolve } from 'node:path'
 import { exit } from 'node:process'
+import { parseArgs } from 'node:util'
+import pLimit from 'p-limit'
 import prettyBytes from 'pretty-bytes'
+import sharp from 'sharp'
+import { optimize as svgoOptimize } from 'svgo'
 import { glob } from 'tinyglobby'
+
+// У batch-режимі повторного доступу до тих самих декодованих зображень не буває —
+// LRU sharp лише з'їдає пам'ять. Паралелізм даємо назовні через p-limit (рекомендований
+// підхід sharp для batch-обробки): на кожну операцію — 1 потік, на CPU — N операцій.
+sharp.cache(false)
+sharp.concurrency(1)
 
 consola.info('START MINIFY IMAGES')
 
-const sections = [
-  {
-    content: 'Minify if compressed size lower than 15%',
-    header: 'Minify images (PNG, JPEG, GIF, SVG)'
-  },
-  {
-    header: 'Options',
-    optionList: [
-      {
-        description: 'If not set, only estimate size difference',
-        name: 'write',
-        type: Boolean
-      },
-      {
-        defaultOption: true,
-        description: 'The directory to process.',
-        name: 'src',
-        type: String,
-        typeLabel: '={underline directory}'
-      },
-      {
-        alias: 'h',
-        description: 'Print this usage guide.',
-        name: 'help',
-        type: Boolean
-      }
-    ]
+const HELP_TEXT = `Minify images (PNG, JPEG, GIF, SVG)
+  Minify if compressed size lower than 15%
+
+Options:
+  --write           If not set, only estimate size difference
+  --src=<dir>       The directory to process. (default: ".")
+  -h, --help        Print this usage guide.
+`
+
+const { positionals, values } = parseArgs({
+  allowPositionals: true,
+  options: {
+    help: { default: false, short: 'h', type: 'boolean' },
+    src: { default: '.', type: 'string' },
+    write: { default: false, type: 'boolean' }
   }
-]
+})
 
-const optionDefinitions = [
-  { name: 'write', type: Boolean, defaultValue: false },
-  { name: 'src', type: String, defaultValue: '.' },
-  { name: 'help', alias: 'h', type: Boolean, defaultValue: false }
-]
-
-const options = commandLineArgs(optionDefinitions)
-
-if (options.help || !options.src) {
-  const usage = commandLineUsage(sections)
-  consola.info(usage)
+if (values.help) {
+  consola.info(HELP_TEXT)
   exit()
+}
+
+// `--src=…` має пріоритет; якщо не заданий — fallback на перший positional, далі CWD.
+const options = {
+  src: values.src === '.' && positionals[0] ? positionals[0] : values.src,
+  write: values.write
 }
 consola.info(options)
 
@@ -78,7 +65,6 @@ const CACHE_FILE = '.minify-image-cache.tsv'
 /**
  * Завантажує TSV-cache з `<srcAbs>/.minify-image-cache.tsv`.
  * Формат: `<rel-path>\t<mtime>\t<originalSize>\t<size>\n` (відсортовано за шляхом).
- * Колонки `originalSize` і `size` стоять поряд — легко порівнювати в редакторі.
  * `Σ(originalSize − size)` = загальна економія по проєкту.
  * @returns {Map<string, { mtime: number, originalSize: number, size: number }>} cache.
  */
@@ -103,12 +89,6 @@ const loadCache = () => {
   return cache
 }
 
-/**
- * Comparator для сортування `[path, value]`-кортежів за ключем.
- * @param {[string, unknown]} a — перший кортеж.
- * @param {[string, unknown]} b — другий кортеж.
- * @returns {number} -1/0/1 — стандартний результат для Array.prototype.sort.
- */
 const compareByPath = ([a], [b]) => {
   if (a < b) return -1
   if (a > b) return 1
@@ -126,16 +106,26 @@ const saveCache = cache => {
   writeFileSync(join(srcAbs, CACHE_FILE), body)
 }
 
+// Sharp за замовчуванням викидає метадані (EXIF, tEXt). `mozjpeg: true` уже вмикає
+// `optimiseScans` (≡ progressive); `progressive: true` залишаємо явно для наочності.
+const compressors = {
+  '.gif': buf => sharp(buf, { animated: true }).gif({ effort: 10 }).toBuffer(),
+  '.jpeg': buf => sharp(buf).jpeg({ mozjpeg: true, progressive: true }).toBuffer(),
+  '.jpg': buf => sharp(buf).jpeg({ mozjpeg: true, progressive: true }).toBuffer(),
+  '.png': buf => sharp(buf).png({ compressionLevel: 9, effort: 10, palette: true }).toBuffer(),
+  '.svg': buf => Buffer.from(svgoOptimize(buf.toString('utf8'), { plugins: [{ name: 'preset-default' }] }).data, 'utf8')
+}
+
 /**
- * Запустити imagemin над буфером, повертає новий буфер або `null` при помилці.
+ * Запустити обраний компресор над буфером, повертає новий буфер або `null` при помилці.
  * @param {Buffer} image — вхідний буфер.
- * @param {Array<unknown>} imageminPlugins — список плагінів imagemin.
+ * @param {(image: Buffer) => Promise<Buffer> | Buffer} compressor — функція стиснення.
  * @param {string} imagePath — шлях (для логів).
  * @returns {Promise<Buffer | null>} стиснений буфер або `null`.
  */
-const compressBuffer = async (image, imageminPlugins, imagePath) => {
+const compressBuffer = async (image, compressor, imagePath) => {
   try {
-    return await imagemin.buffer(image, { plugins: imageminPlugins })
+    return await compressor(image)
   } catch {
     consola.error('skip minify (error): ', imagePath)
     return null
@@ -143,106 +133,71 @@ const compressBuffer = async (image, imageminPlugins, imagePath) => {
 }
 
 /**
- * Записати стиснене зображення на диск, якщо економія перевищує 15%.
- * Оновлює `totalSaving.compressed`.
- * @param {string} imagePath — шлях до файлу.
- * @param {Buffer} image — вхідний буфер.
- * @param {Buffer} compressedImage — стиснений буфер.
- * @param {{ compressed: number }} totalSaving — акумулятор економії.
- */
-const persistIfBetter = (imagePath, image, compressedImage, totalSaving) => {
-  if (compressedImage.length * 1.15 < image.length) {
-    writeFileSync(imagePath, compressedImage)
-    consola.debug(`${imagePath} compressed`)
-    totalSaving.compressed += image.length - compressedImage.length
-  }
-}
-
-/**
- * Стиснути набір зображень одним набором imagemin-плагінів.
- * На cache hit файл не читається — тільки один `statSync` на файл.
- * Оригінальний розмір (до першої компресії) зберігається в cache і
- * переноситься між стадіями (наприклад, JPEG проходить mozjpeg → jpegtran).
- * @param {Array<unknown>} imageminPlugins — плагіни imagemin.
- * @param {string[]} images — список абсолютних шляхів.
+ * Обробити один файл. Cache hit → пропуск. Інакше — стиснути і (у `--write`) перезаписати,
+ * якщо економія > 15%. Cache mutates у місці; результат описує внесок у `stats`.
+ * @param {string} imagePath — абсолютний шлях.
  * @param {Map<string, { size: number, mtime: number, originalSize: number }> | null} cache — null у estimate-режимі.
- * @returns {Promise<{ orig: number, compressed: number }>} підсумок розмірів.
+ * @returns {Promise<{ orig: number, compressed: number }>} вклад файлу в підсумок.
  */
-async function compress(imageminPlugins, images, cache) {
-  const totalSaving = { compressed: 0, orig: 0 }
+const processOne = async (imagePath, cache) => {
+  const ext = extname(imagePath).toLowerCase()
+  const compressor = compressors[ext]
+  if (!compressor) return { compressed: 0, orig: 0 }
 
-  for (const imagePath of images) {
-    const relPath = cache ? relative(srcAbs, imagePath) : null
+  const relPath = cache ? relative(srcAbs, imagePath) : null
 
-    if (cache) {
-      const stat = statSync(imagePath)
-      const cached = cache.get(relPath)
-      if (cached && cached.size === stat.size && cached.mtime === stat.mtimeMs) {
-        consola.info(`${imagePath} already compressed (size+mtime match)`)
-        totalSaving.orig += stat.size
-        continue
-      }
-    }
-
-    const image = readFileSync(imagePath)
-    totalSaving.orig += image.length
-
-    const compressedImage = await compressBuffer(image, imageminPlugins, imagePath)
-    if (!compressedImage) continue
-
-    consola.info(
-      `${imagePath} original size: ${prettyBytes(image.length)}, ` +
-        `compressed size: ${prettyBytes(compressedImage.length)}`
-    )
-
-    if (cache) {
-      persistIfBetter(imagePath, image, compressedImage, totalSaving)
-      // Re-stat ПІСЛЯ можливого writeFileSync — щоб у cache потрапили нові size/mtime
-      const stat = statSync(imagePath)
-      // На наступній стадії pipeline (jpegtran після mozjpeg) запис уже існує —
-      // зберігаємо найперший originalSize, не переписуємо post-mozjpeg розміром
-      const existing = cache.get(relPath)
-      cache.set(relPath, {
-        mtime: stat.mtimeMs,
-        originalSize: existing?.originalSize ?? image.length,
-        size: stat.size
-      })
-    } else {
-      totalSaving.compressed += image.length - compressedImage.length
+  if (cache) {
+    const stat = statSync(imagePath)
+    const cached = cache.get(relPath)
+    if (cached && cached.size === stat.size && cached.mtime === stat.mtimeMs) {
+      consola.info(`${imagePath} already compressed (size+mtime match)`)
+      return { compressed: 0, orig: stat.size }
     }
   }
 
-  return totalSaving
+  const image = readFileSync(imagePath)
+  const compressedImage = await compressBuffer(image, compressor, imagePath)
+  if (!compressedImage) return { compressed: 0, orig: image.length }
+
+  consola.info(
+    `${imagePath} original size: ${prettyBytes(image.length)}, ` +
+      `compressed size: ${prettyBytes(compressedImage.length)}`
+  )
+
+  const result = { compressed: 0, orig: image.length }
+
+  if (cache) {
+    if (compressedImage.length * 1.15 < image.length) {
+      writeFileSync(imagePath, compressedImage)
+      consola.debug(`${imagePath} compressed`)
+      result.compressed = image.length - compressedImage.length
+    }
+    // Re-stat ПІСЛЯ можливого writeFileSync — щоб у cache потрапили нові size/mtime
+    const stat = statSync(imagePath)
+    const existing = cache.get(relPath)
+    cache.set(relPath, {
+      mtime: stat.mtimeMs,
+      originalSize: existing?.originalSize ?? image.length,
+      size: stat.size
+    })
+  } else {
+    // estimate-режим: рахуємо raw-дельту (може бути від'ємною)
+    result.compressed = image.length - compressedImage.length
+  }
+
+  return result
 }
 
-const stats = { compressed: 0, orig: 0 }
 const cache = options.write ? loadCache() : null
-let totalSaving
+const limit = pLimit(availableParallelism())
 
-const pngImages = await glob(['**/*.png'], globOptions)
-totalSaving = await compress([imageminPngquant({ strip: true }), imageminZopfli({ more: true })], pngImages, cache)
-stats.orig += totalSaving.orig
-stats.compressed += totalSaving.compressed
-
-const jpegImages = await glob(['**/*.{jpg,jpeg}'], globOptions)
-totalSaving = await compress([imageminMozjpeg()], jpegImages, cache)
-stats.orig += totalSaving.orig
-stats.compressed += totalSaving.compressed
-
-const jpegImages2 = await glob(['**/*.{jpg,jpeg}'], globOptions)
-totalSaving = await compress([imageminJpegtran()], jpegImages2, cache)
-stats.orig += totalSaving.orig
-stats.compressed += totalSaving.compressed
-
-const gifImages = await glob(['**/*.gif'], globOptions)
-totalSaving = await compress([imageminGifsicle()], gifImages, cache)
-stats.orig += totalSaving.orig
-stats.compressed += totalSaving.compressed
-
-const svgImages = await glob(['**/*.svg'], globOptions)
-totalSaving = await compress([imageminSvgo({ plugins: [{ name: 'preset-default' }] })], svgImages, cache)
-stats.orig += totalSaving.orig
-stats.compressed += totalSaving.compressed
+const allImages = await glob(['**/*.{png,jpg,jpeg,gif,svg}'], globOptions)
+const results = await Promise.all(allImages.map(imagePath => limit(() => processOne(imagePath, cache))))
+const stats = { compressed: 0, orig: 0 }
+for (const r of results) {
+  stats.orig += r.orig
+  stats.compressed += r.compressed
+}
 
 if (cache) saveCache(cache)
 
