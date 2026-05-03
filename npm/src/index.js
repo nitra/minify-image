@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import calcPercent from 'calc-percent'
-import consola from 'consola'
+import { consola } from 'consola'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'

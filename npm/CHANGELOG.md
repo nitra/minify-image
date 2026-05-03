@@ -4,6 +4,13 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
+## [3.2.1] - 2026-05-03
+
+### Fixed
+
+- Імпорт `consola` через named export `{ consola }` замість default — усуває
+  попередження `eslint-plugin-import/no-named-as-default` під час `bun lint-js`.
+
 ## [3.2.0] - 2026-05-03
 
 ### Added
