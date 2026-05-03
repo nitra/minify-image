@@ -4,6 +4,37 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
+## [3.2.0] - 2026-05-03
+
+### Added
+
+- Split-cache: новий `<src>/.n-minify-image.tsv` (формат
+  `path\tsha1\toriginalSize\tsize`) — закомічений source of truth для
+  slow-path і `Project lifetime savings`. Новий
+  `<src>/node_modules/.cache/@nitra/minify-image/mtime.tsv` (формат
+  `path\tmtime\tsize`) — локальний fast-path під `node_modules/`,
+  авто-gitignored за конвенцією JS-tooling-у (ESLint, Babel, webpack
+  кешуються там же). Дворівнева перевірка: при збігу `(size, mtime)` —
+  skip без читання (як було); при mtime mismatch — read+SHA-1 проти
+  закоміченого hash-cache, на match warm локальний mtime cache і skip.
+  `git clone`/`git checkout` тепер не викликає reprocess: hash переживає,
+  mtime відновлюється.
+- SHA-1 — через вбудований `node:crypto`, без нових залежностей.
+
+### Changed
+
+- `<src>/.minify-image-cache.tsv` (4 колонки `path\tmtime\toriginalSize\tsize`)
+  замінено на два файли — див. вище. При першому запуску `originalSize`/`size`
+  зі старого файлу автоматично переїжджають у `.n-minify-image.tsv` (з порожнім
+  hash, що змусить пройти slow-path без reprocess і записати справжній SHA-1).
+  Старий файл лишається на диску — користувач видаляє його вручну (`git rm
+--cached .minify-image-cache.tsv` + `rm`), у README є інструкція.
+- README: секція `## Cache` переписана під два файли + блок Migration.
+  Рекомендація — комітити `.n-minify-image.tsv`. Локальний `mtime.tsv`
+  лежить у `node_modules/.cache/` і не потребує окремого `.gitignore`-рядка.
+- `Project lifetime savings` тепер рахується з закоміченого hash-cache —
+  переживає `git clone` (раніше скидався, бо TSV був гітignored).
+
 ## [3.1.0] - 2026-05-03
 
 ### Added

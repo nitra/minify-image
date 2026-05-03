@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const workDir = join(here, 'play-output')
 const cli = join(here, '..', 'npm', 'src', 'index.js')
-const cacheFile = join(workDir, '.minify-image-cache.tsv')
+const cacheFile = join(workDir, '.n-minify-image.tsv')
 const target = join(workDir, 'fat.svg')
 
 // Чисте робоче середовище — щоб кожен запуск починав з нуля

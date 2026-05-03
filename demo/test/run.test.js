@@ -8,7 +8,7 @@ import { crc32 } from 'node:zlib'
 const here = dirname(fileURLToPath(import.meta.url))
 const cli = join(here, '..', '..', 'npm', 'src', 'index.js')
 const filesDir = join(here, 'files')
-const cacheFileName = '.minify-image-cache.tsv'
+const cacheFileName = '.n-minify-image.tsv'
 
 /**
  * Запускає CLI як підпроцес і повертає `{ exitCode, stdout }`.
@@ -60,6 +60,9 @@ const writeFatPng = (srcPng, dstPath, payloadSize) => {
 /** Регекс для перевірки рядка з ненульовою економією: `Images optimized, saving: X kB, Y%`. */
 const NON_ZERO_SAVING_RE = /Images optimized, saving: [^,]+, [1-9]\d*%/
 
+/** SHA-1 hex-дайджест: рівно 40 [0-9a-f]. */
+const SHA1_HEX_RE = /^[\da-f]{40}$/
+
 /** Файли-фікстури, які CLI має знайти за глобами (vendor/* виключено через ignore). */
 const expectedFiles = ['ready.png', 'ready.Jpeg', 'big_jpeg_req_6.jpg', 'minified.gif', 'minified.svg']
 
@@ -100,15 +103,15 @@ test('--write режим: проганяє компресор для всіх ф
     const cachePath = join(workDir, cacheFileName)
     expect(existsSync(cachePath)).toBe(true)
 
-    // Перевіряємо TSV-формат: 4 колонки (rel-path, mtime, originalSize, size)
+    // Перевіряємо TSV-формат: 4 колонки (rel-path, sha1-hex, originalSize, size)
     const tsvLines = readFileSync(cachePath, 'utf8').trimEnd().split('\n')
     expect(tsvLines.length).toBe(expectedFiles.length)
     for (const line of tsvLines) {
       const cols = line.split('\t')
       expect(cols.length).toBe(4)
-      const [relPath, mtime, originalSize, size] = cols
+      const [relPath, hash, originalSize, size] = cols
       expect(relPath.startsWith('/')).toBe(false)
-      expect(Number.isFinite(Number(mtime))).toBe(true)
+      expect(SHA1_HEX_RE.test(hash)).toBe(true)
       expect(Number.isInteger(Number(originalSize))).toBe(true)
       expect(Number.isInteger(Number(size))).toBe(true)
       // size ніколи не може перевищувати originalSize

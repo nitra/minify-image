@@ -11,14 +11,15 @@
   ],
   "type": "module",
   "scripts": {
-    "lint": "bun run lint-js && bun run lint-text && bun run lint-ga && oxfmt .",
+    "lint": "bun run lint-js && bun run lint-text && bun run lint-ga && bun run lint-image && oxfmt .",
     "lint-js": "bunx oxlint --fix && bunx eslint --fix . && bunx jscpd .",
     "lint-text": "npx cspell . && bunx markdownlint-cli2 --fix \"**/*.md\" \"**/*.mdc\" && bun ./node_modules/@nitra/cursor/scripts/run-v8r.mjs",
-    "lint-ga": "bunx github-actionlint && uvx zizmor --offline --collect=workflows ."
+    "lint-ga": "n-cursor lint-ga",
+    "lint-image": "npx @nitra/minify-image --src=. --write --avif"
   },
   "devDependencies": {
     "@nitra/cspell-dict": "^2.1.0",
-    "@nitra/cursor": "^1.8.165",
+    "@nitra/cursor": "^1.8.169",
     "@nitra/eslint-config": "^3.8.0"
   },
   "engines": {

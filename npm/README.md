@@ -36,24 +36,54 @@ rewritten so it stays in sync with edits to the source image.
 
 ## Cache
 
-When run with `--write`, the CLI maintains `<src>/.minify-image-cache.tsv` —
-one tab-separated line per image:
-`<relative-path>\t<mtime>\t<originalSize>\t<size>`.
+When run with `--write`, the CLI maintains two TSV files with different
+roles and locations:
 
-On the next run each file is matched by a single `stat` syscall — when
-`(size, mtime)` match the cached tuple, the file is skipped without reading
-its contents. Re-runs of `npx @nitra/minify-image` in the same directory are
-therefore cheap (constant time per file, independent of image size) and
-survive ephemeral `node_modules`.
+### `<src>/.n-minify-image.tsv` — committed source of truth
 
-`originalSize` records the size BEFORE the first compression and stands next
-to `size` so you can eyeball the savings per file in any editor. The CLI
-prints `Project lifetime savings: X (Y% across N files)` at the end of every
-`--write` run, computed as `Σ(originalSize − size)` across cache entries.
+Per line: `<relative-path>\t<sha1-hex>\t<originalSize>\t<size>`.
 
-Lines are sorted alphabetically so the cache produces a clean git diff if you
-choose to commit it. Otherwise add it to `.gitignore`:
+This file is the slow-path cache and the source for
+`Project lifetime savings`. **Commit it.** Lines are sorted alphabetically;
+the SHA-1 column changes only when content actually changes — diffs stay
+minimal.
 
-```text
-.minify-image-cache.tsv
-```
+After `git clone` or `git checkout` (which reset file `mtime` to checkout
+time), the CLI reads each file, computes its SHA-1, compares to the cached
+hash; on match the local mtime cache is warmed and no reprocessing happens.
+`originalSize` records the size BEFORE the first compression, fed to
+`Project lifetime savings: X (Y% across N files)` printed at the end of
+each `--write` run.
+
+### `<src>/node_modules/.cache/@nitra/minify-image/mtime.tsv` — local fast path
+
+Per line: `<relative-path>\t<mtime>\t<size>`.
+
+When `(size, mtime)` match the cached tuple, the file is skipped without
+reading — constant time per file, ideal for the warm dev-loop on a single
+machine. Lives under `node_modules/` so it is automatically gitignored
+(matches the convention used by ESLint, Babel, webpack, Turbo, etc.).
+`rm -rf node_modules` wipes it; the next run rebuilds it via the slow
+path against `.n-minify-image.tsv` — no images are reprocessed.
+
+### Migration from versions < 3.2
+
+Earlier versions kept a single `<src>/.minify-image-cache.tsv` (4 columns:
+`path\tmtime\toriginalSize\tsize`), usually gitignored. On first run after
+upgrade:
+
+1. The new files are created — `<src>/.n-minify-image.tsv` is seeded with
+   `originalSize`/`size` from the old TSV (with empty hash placeholder),
+   so `Project lifetime savings` does not reset.
+2. Each file goes through the slow path (empty hash means cache miss);
+   SHA-1 is computed and stored. **No reprocessing happens** unless a
+   file's content actually changed.
+3. The old `.minify-image-cache.tsv` is left in place — remove it manually:
+
+   ```bash
+   git rm --cached .minify-image-cache.tsv 2>/dev/null || true
+   rm -f .minify-image-cache.tsv
+   ```
+
+   Add `.n-minify-image.tsv` to git, ensure `node_modules/` covers the local
+   cache (it usually already does).

@@ -2,9 +2,10 @@
 
 import calcPercent from 'calc-percent'
 import consola from 'consola'
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
-import { extname, join, relative, resolve } from 'node:path'
+import { dirname, extname, join, relative, resolve } from 'node:path'
 import { exit } from 'node:process'
 import { parseArgs } from 'node:util'
 import pLimit from 'p-limit'
@@ -58,41 +59,30 @@ consola.info(options)
 
 const srcAbs = resolve(options.src)
 
+// `test/**` — тестові фікстури навмисно неоптимальні (мають перетинати поріг
+// 15% при реальному прогоні компресора), оптимізація зробила б їх непридатними.
 const globOptions = {
   absolute: true,
   caseSensitiveMatch: false,
   cwd: options.src,
-  ignore: ['**/node_modules/**', '**/vendor/**']
+  ignore: ['**/node_modules/**', '**/vendor/**', '**/test/**']
 }
 
-const CACHE_FILE = '.minify-image-cache.tsv'
+// Закомічений source of truth: SHA-1 + originalSize. Лежить у корені src — у git.
+const HASH_CACHE_FILE = '.n-minify-image.tsv'
+
+// Локальний mtime fast-path. Авто-gitignored через node_modules/. Якщо node_modules
+// нема (наприклад, fresh repo без bun install) — mkdir створює всю гілку рекурсивно.
+const MTIME_CACHE_FILE = 'node_modules/.cache/@nitra/minify-image/mtime.tsv'
 
 /**
- * Завантажує TSV-cache з `<srcAbs>/.minify-image-cache.tsv`.
- * Формат: `<rel-path>\t<mtime>\t<originalSize>\t<size>\n` (відсортовано за шляхом).
- * `Σ(originalSize − size)` = загальна економія по проєкту.
- * @returns {Map<string, { mtime: number, originalSize: number, size: number }>} cache.
+ * SHA-1 (hex) байтів буфера. Не криптографічна вимога — лише cache-ключ;
+ * SHA-1 вибрано як вбудоване в Node без додаткових залежностей.
+ * @param {Buffer} buf — байти файлу.
+ * @returns {string} hex-дайджест (40 символів).
  */
-const loadCache = () => {
-  const cache = new Map()
-  try {
-    const text = readFileSync(join(srcAbs, CACHE_FILE), 'utf8')
-    for (const line of text.split('\n')) {
-      if (!line) continue
-      const [path, mtime, originalSize, size] = line.split('\t')
-      if (!path || !mtime || !size) continue
-      const sizeNum = Number(size)
-      cache.set(path, {
-        mtime: Number(mtime),
-        originalSize: originalSize ? Number(originalSize) : sizeNum,
-        size: sizeNum
-      })
-    }
-  } catch {
-    // файл відсутній/недоступний — стартуємо з порожнім cache
-  }
-  return cache
-}
+// eslint-disable-next-line sonarjs/hashing -- cache-ключ, не security-context (колізії атакувати ніхто не буде)
+const hashBuffer = buf => createHash('sha1').update(buf).digest('hex')
 
 const compareByPath = ([a], [b]) => {
   if (a < b) return -1
@@ -101,14 +91,116 @@ const compareByPath = ([a], [b]) => {
 }
 
 /**
- * Зберігає cache як TSV. Сортує за шляхом — стабільний diff у git.
- * @param {Map<string, { size: number, mtime: number, originalSize: number }>} cache — стан cache.
+ * Локальний mtime-cache з `<src>/node_modules/.cache/@nitra/minify-image/mtime.tsv`.
+ * Формат: `<rel-path>\t<mtime>\t<size>`. Fast-path: при збігу size+mtime — skip
+ * без читання файлу. Машинно-залежний (mtime скидається при git clone/checkout),
+ * тому лежить у node_modules/ — авто-gitignored.
+ * @returns {Map<string, { mtime: number, size: number }>} relPath → { mtime, size }.
  */
-const saveCache = cache => {
+const loadMtimeCache = () => {
+  const cache = new Map()
+  try {
+    const text = readFileSync(join(srcAbs, MTIME_CACHE_FILE), 'utf8')
+    for (const line of text.split('\n')) {
+      if (!line) continue
+      const cols = line.split('\t')
+      if (cols.length !== 3) continue
+      const [path, mtime, size] = cols
+      if (!path || !mtime || !size) continue
+      cache.set(path, { mtime: Number(mtime), size: Number(size) })
+    }
+  } catch {
+    // файл відсутній — стартуємо з порожнім cache (cold start або після rm -rf node_modules)
+  }
+  return cache
+}
+
+/**
+ * Прочитати 4-колонковий TSV у `cache` через `parseLine`. Повертає `true`,
+ * якщо файл прочитався (навіть з 0 валідних рядків — це означає, що source
+ * of truth присутній і fallback на legacy не потрібен). `false` лише на read-error.
+ * @param {string} file — абсолютний шлях TSV.
+ * @param {Map<string, { hash: string, originalSize: number, size: number }>} cache — куди писати.
+ * @param {(cols: string[], cache: Map<string, { hash: string, originalSize: number, size: number }>) => void} parseLine — парсер одного рядка (4 колонки).
+ * @returns {boolean} `true`, якщо файл вдалося прочитати; `false` на read-error.
+ */
+const readTsv4 = (file, cache, parseLine) => {
+  let text
+  try {
+    text = readFileSync(file, 'utf8')
+  } catch {
+    return false
+  }
+  for (const line of text.split('\n')) {
+    if (!line) continue
+    const cols = line.split('\t')
+    if (cols.length === 4) parseLine(cols, cache)
+  }
+  return true
+}
+
+const parseHashLine = (cols, cache) => {
+  const [path, hash, originalSize, size] = cols
+  if (!path || !hash || !size) return
+  const sizeNum = Number(size)
+  cache.set(path, { hash, originalSize: Number(originalSize) || sizeNum, size: sizeNum })
+}
+
+const parseLegacyLine = (cols, cache) => {
+  const [path, , originalSize, size] = cols // mtime ігноруємо
+  if (!path || !size) return
+  const sizeNum = Number(size)
+  cache.set(path, { hash: '', originalSize: Number(originalSize) || sizeNum, size: sizeNum })
+}
+
+/**
+ * Закомічений hash-cache з `<src>/.n-minify-image.tsv`. Формат:
+ * `<rel-path>\t<sha1-hex>\t<originalSize>\t<size>`. Slow-path і source of truth
+ * для `Project lifetime savings`. Переживає `git clone`/`checkout` — slow-path
+ * дає cache hit за SHA-1, локальний mtime cache вмить зігрівається.
+ *
+ * Міграція: якщо файл відсутній, але існує старий `<src>/.minify-image-cache.tsv`
+ * (4 колонки `path\tmtime\toriginalSize\tsize`) — підтягуємо `originalSize`/`size`
+ * з нього з порожнім hash, щоб lifetime savings не скидався при міграції.
+ * Hash заповниться при першому slow-path-запуску (read+sha1) без reprocess.
+ * @returns {Map<string, { hash: string, originalSize: number, size: number }>} relPath → { hash, originalSize, size }.
+ */
+const loadHashCache = () => {
+  const cache = new Map()
+  if (readTsv4(join(srcAbs, HASH_CACHE_FILE), cache, parseHashLine)) return cache
+  readTsv4(join(srcAbs, '.minify-image-cache.tsv'), cache, parseLegacyLine)
+  return cache
+}
+
+/**
+ * Зберігає локальний mtime-cache. Створює `<src>/node_modules/.cache/@nitra/minify-image/`
+ * рекурсивно при потребі (на свіжому репо без bun install).
+ * @param {Map<string, { mtime: number, size: number }>} cache — стан mtime-cache на запис.
+ */
+const saveMtimeCache = cache => {
+  const file = join(srcAbs, MTIME_CACHE_FILE)
+  mkdirSync(dirname(file), { recursive: true })
   const entries = [...cache.entries()].toSorted(compareByPath)
-  const lines = entries.map(([path, { mtime, originalSize, size }]) => `${path}\t${mtime}\t${originalSize}\t${size}`)
-  const body = lines.length ? `${lines.join('\n')}\n` : ''
-  writeFileSync(join(srcAbs, CACHE_FILE), body)
+  const lines = entries.map(([path, { mtime, size }]) => `${path}\t${mtime}\t${size}`)
+  writeFileSync(file, lines.length ? `${lines.join('\n')}\n` : '')
+}
+
+/**
+ * Зберігає закомічений hash-cache. Сортує за шляхом — стабільний git diff;
+ * hash і size змінюються лише коли реально змінюється контент файлу.
+ * Якщо cache порожній — файл не пишемо (запуск без зображень не повинен
+ * плодити порожній артефакт у корені).
+ * @param {Map<string, { hash: string, originalSize: number, size: number }>} cache — стан hash-cache на запис.
+ */
+const saveHashCache = cache => {
+  const entries = [...cache.entries()].toSorted(compareByPath)
+  // Не пишемо записи з порожнім hash — це міграційні placeholder-и зі старого
+  // 4-колонкового файлу; вони заповнюються справжніми хешами при slow-path-запуску.
+  const lines = entries
+    .filter(([, { hash }]) => hash)
+    .map(([path, { hash, originalSize, size }]) => `${path}\t${hash}\t${originalSize}\t${size}`)
+  if (lines.length === 0) return
+  writeFileSync(join(srcAbs, HASH_CACHE_FILE), `${lines.join('\n')}\n`)
 }
 
 // Sharp за замовчуванням викидає метадані (EXIF, tEXt). `mozjpeg: true` уже вмикає
@@ -157,47 +249,65 @@ const compressBuffer = async (image, compressor, imagePath) => {
 }
 
 /**
- * Перевіряє cache на hit; на hit довиконує AVIF (якщо треба) і повертає внесок у stats.
+ * Перевіряє mtime → hash cache; на hit довиконує AVIF (якщо треба) і повертає внесок у stats.
  * Cache miss → null, тоді caller стискає файл як зазвичай.
  * @param {string} imagePath — абсолютний шлях.
  * @param {string} relPath — шлях відносно srcAbs (cache key).
- * @param {Map<string, { size: number, mtime: number, originalSize: number }>} cache — стан cache.
+ * @param {Map<string, { mtime: number, size: number }>} mtimeCache — локальний fast-path cache.
+ * @param {Map<string, { hash: string, originalSize: number, size: number }>} hashCache — закомічений slow-path cache.
  * @param {string | null} avifPath — куди писати AVIF, або null якщо не треба.
  * @returns {Promise<{ orig: number, compressed: number } | null>} результат або null на cache miss.
  */
-const tryCacheHit = async (imagePath, relPath, cache, avifPath) => {
+const tryCacheHit = async (imagePath, relPath, mtimeCache, hashCache, avifPath) => {
   const stat = statSync(imagePath)
-  const cached = cache.get(relPath)
-  if (!cached || cached.size !== stat.size || cached.mtime !== stat.mtimeMs) return null
+  const mtimeEntry = mtimeCache.get(relPath)
 
-  // Оригінал не змінився. AVIF генеруємо тільки якщо його ще нема —
-  // повторні прогони не перекодовують одне й те саме.
-  if (avifPath && !existsSync(avifPath)) {
-    await writeAvif(readFileSync(imagePath), avifPath, imagePath)
+  // Fast path: розмір + mtime збігаються — skip без читання
+  if (mtimeEntry && mtimeEntry.size === stat.size && mtimeEntry.mtime === stat.mtimeMs) {
+    if (avifPath && !existsSync(avifPath)) {
+      await writeAvif(readFileSync(imagePath), avifPath, imagePath)
+    }
+    consola.info(`${imagePath} already compressed (mtime hit)`)
+    return { compressed: 0, orig: stat.size }
   }
-  consola.info(`${imagePath} already compressed (size+mtime match)`)
+
+  // Slow path: hash cache. Розмір — first cheap filter; hash — підтвердження контенту.
+  const hashEntry = hashCache.get(relPath)
+  if (!hashEntry || !hashEntry.hash || hashEntry.size !== stat.size) return null
+
+  const buf = readFileSync(imagePath)
+  if (hashBuffer(buf) !== hashEntry.hash) return null
+
+  // Той самий контент після git clone/checkout — зігріваємо локальний mtime cache.
+  mtimeCache.set(relPath, { mtime: stat.mtimeMs, size: stat.size })
+  if (avifPath && !existsSync(avifPath)) {
+    await writeAvif(buf, avifPath, imagePath)
+  }
+  consola.info(`${imagePath} already compressed (hash hit, mtime warmed)`)
   return { compressed: 0, orig: stat.size }
 }
 
 /**
- * Обробити один файл. Cache hit → пропуск. Інакше — стиснути і (у `--write`) перезаписати,
- * якщо економія > 15%. Cache mutates у місці; результат описує внесок у `stats`.
+ * Обробити один файл. Cache hit (mtime або hash) → пропуск. Cache miss → стиснути
+ * і записати, якщо економія > 15%. Оновлює обидва cache у місці.
  * @param {string} imagePath — абсолютний шлях.
- * @param {Map<string, { size: number, mtime: number, originalSize: number }> | null} cache — null у estimate-режимі.
+ * @param {Map<string, { mtime: number, size: number }> | null} mtimeCache — null у estimate-режимі.
+ * @param {Map<string, { hash: string, originalSize: number, size: number }> | null} hashCache — null у estimate-режимі.
  * @returns {Promise<{ orig: number, compressed: number }>} вклад файлу в підсумок.
  */
-const processOne = async (imagePath, cache) => {
+const processOne = async (imagePath, mtimeCache, hashCache) => {
   const ext = extname(imagePath).toLowerCase()
   const compressor = compressors[ext]
   if (!compressor) return { compressed: 0, orig: 0 }
 
-  const relPath = cache ? relative(srcAbs, imagePath) : null
+  const usingCache = Boolean(mtimeCache && hashCache)
+  const relPath = usingCache ? relative(srcAbs, imagePath) : null
   // `<name>.<ext>.avif` (а не `<name>.avif`) — щоб `ready.png` і `ready.jpg`
   // не цілили в один `ready.avif` і не затирали один одного.
-  const avifPath = options.avif && cache && AVIF_SOURCE_EXTS.has(ext) ? `${imagePath}.avif` : null
+  const avifPath = options.avif && usingCache && AVIF_SOURCE_EXTS.has(ext) ? `${imagePath}.avif` : null
 
-  if (cache) {
-    const hit = await tryCacheHit(imagePath, relPath, cache, avifPath)
+  if (usingCache) {
+    const hit = await tryCacheHit(imagePath, relPath, mtimeCache, hashCache, avifPath)
     if (hit) return hit
   }
 
@@ -217,40 +327,45 @@ const processOne = async (imagePath, cache) => {
       `compressed size: ${prettyBytes(compressedImage.length)}`
   )
 
-  if (!cache) {
+  if (!usingCache) {
     // estimate-режим: рахуємо raw-дельту (може бути від'ємною)
     return { compressed: image.length - compressedImage.length, orig: image.length }
   }
 
-  let compressed = 0
+  let compressedDelta = 0
+  let onDiskBytes = image
   if (compressedImage.length * 1.15 < image.length) {
     writeFileSync(imagePath, compressedImage)
     consola.debug(`${imagePath} compressed`)
-    compressed = image.length - compressedImage.length
+    compressedDelta = image.length - compressedImage.length
+    onDiskBytes = compressedImage
   }
   // Re-stat ПІСЛЯ можливого writeFileSync — щоб у cache потрапили нові size/mtime
   const stat = statSync(imagePath)
-  const existing = cache.get(relPath)
-  cache.set(relPath, {
-    mtime: stat.mtimeMs,
-    originalSize: existing?.originalSize ?? image.length,
+  const existingOriginal = hashCache.get(relPath)?.originalSize ?? image.length
+  mtimeCache.set(relPath, { mtime: stat.mtimeMs, size: stat.size })
+  hashCache.set(relPath, {
+    hash: hashBuffer(onDiskBytes),
+    originalSize: existingOriginal,
     size: stat.size
   })
-  return { compressed, orig: image.length }
+  return { compressed: compressedDelta, orig: image.length }
 }
 
-const cache = options.write ? loadCache() : null
+const mtimeCache = options.write ? loadMtimeCache() : null
+const hashCache = options.write ? loadHashCache() : null
 const limit = pLimit(availableParallelism())
 
 const allImages = await glob(['**/*.{png,jpg,jpeg,gif,svg}'], globOptions)
-const results = await Promise.all(allImages.map(imagePath => limit(() => processOne(imagePath, cache))))
+const results = await Promise.all(allImages.map(imagePath => limit(() => processOne(imagePath, mtimeCache, hashCache))))
 const stats = { compressed: 0, orig: 0 }
 for (const r of results) {
   stats.orig += r.orig
   stats.compressed += r.compressed
 }
 
-if (cache) saveCache(cache)
+if (mtimeCache) saveMtimeCache(mtimeCache)
+if (hashCache) saveHashCache(hashCache)
 
 consola.info(`All image size: ${prettyBytes(stats.orig)}`)
 if (options.write) {
@@ -261,17 +376,17 @@ if (options.write) {
   consola.info(`Estimated saving: ${prettyBytes(stats.compressed)}, ${calcPercent(stats.compressed, stats.orig)}%`)
 }
 
-if (cache && cache.size > 0) {
+if (hashCache && hashCache.size > 0) {
   let totalOriginal = 0
   let totalCurrent = 0
-  for (const [, entry] of cache) {
+  for (const [, entry] of hashCache) {
     totalOriginal += entry.originalSize
     totalCurrent += entry.size
   }
   const projectSaving = totalOriginal - totalCurrent
   consola.info(
     `Project lifetime savings: ${prettyBytes(projectSaving)} ` +
-      `(${calcPercent(projectSaving, totalOriginal)}% across ${cache.size} files)`
+      `(${calcPercent(projectSaving, totalOriginal)}% across ${hashCache.size} files)`
   )
 }
 
