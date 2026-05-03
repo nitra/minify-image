@@ -1,0 +1,27 @@
+npm/CHANGELOG.md
+  09202086523646d4 7-13
+npm/package.json
+  09202086523646d4 3
+npm/src/index.js
+  09202086523646d4 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "9170a4cf6fe7cf906734f96b220423e1f4582cce",
+  "prompts": {
+    "09202086523646d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "929838d5-bf62-4d1c-92fd-4affe4d49f0e",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Vitalii Tverdokhlib",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 2,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    }
+  }
+}
