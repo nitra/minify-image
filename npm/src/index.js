@@ -2,7 +2,7 @@
 
 import calcPercent from 'calc-percent'
 import consola from 'consola'
-import { readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { extname, join, relative, resolve } from 'node:path'
 import { exit } from 'node:process'
@@ -27,12 +27,16 @@ const HELP_TEXT = `Minify images (PNG, JPEG, GIF, SVG)
 Options:
   --write           If not set, only estimate size difference
   --src=<dir>       The directory to process. (default: ".")
+  --avif            With --write, create <name>.<ext>.avif (quality 40) next
+                    to each raster image (PNG/JPEG/GIF) before compressing the
+                    original.
   -h, --help        Print this usage guide.
 `
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
+    avif: { default: false, type: 'boolean' },
     help: { default: false, short: 'h', type: 'boolean' },
     src: { default: '.', type: 'string' },
     write: { default: false, type: 'boolean' }
@@ -46,6 +50,7 @@ if (values.help) {
 
 // `--src=…` має пріоритет; якщо не заданий — fallback на перший positional, далі CWD.
 const options = {
+  avif: values.avif,
   src: values.src === '.' && positionals[0] ? positionals[0] : values.src,
   write: values.write
 }
@@ -116,6 +121,25 @@ const compressors = {
   '.svg': buf => Buffer.from(svgoOptimize(buf.toString('utf8'), { plugins: [{ name: 'preset-default' }] }).data, 'utf8')
 }
 
+// AVIF створюємо тільки для растрових форматів — для SVG (вектор) це безглуздо.
+const AVIF_SOURCE_EXTS = new Set(['.gif', '.jpeg', '.jpg', '.png'])
+
+/**
+ * Кодує буфер у AVIF (quality 40) і записує поряд з оригіналом.
+ * @param {Buffer} image — буфер оригіналу.
+ * @param {string} avifPath — куди писати .avif.
+ * @param {string} imagePath — шлях оригіналу (для логів).
+ */
+const writeAvif = async (image, avifPath, imagePath) => {
+  try {
+    const buf = await sharp(image).avif({ quality: 40 }).toBuffer()
+    writeFileSync(avifPath, buf)
+    consola.info(`${imagePath} → ${avifPath} avif size: ${prettyBytes(buf.length)}`)
+  } catch {
+    consola.error('skip avif (error): ', imagePath)
+  }
+}
+
 /**
  * Запустити обраний компресор над буфером, повертає новий буфер або `null` при помилці.
  * @param {Buffer} image — вхідний буфер.
@@ -133,6 +157,29 @@ const compressBuffer = async (image, compressor, imagePath) => {
 }
 
 /**
+ * Перевіряє cache на hit; на hit довиконує AVIF (якщо треба) і повертає внесок у stats.
+ * Cache miss → null, тоді caller стискає файл як зазвичай.
+ * @param {string} imagePath — абсолютний шлях.
+ * @param {string} relPath — шлях відносно srcAbs (cache key).
+ * @param {Map<string, { size: number, mtime: number, originalSize: number }>} cache — стан cache.
+ * @param {string | null} avifPath — куди писати AVIF, або null якщо не треба.
+ * @returns {Promise<{ orig: number, compressed: number } | null>} результат або null на cache miss.
+ */
+const tryCacheHit = async (imagePath, relPath, cache, avifPath) => {
+  const stat = statSync(imagePath)
+  const cached = cache.get(relPath)
+  if (!cached || cached.size !== stat.size || cached.mtime !== stat.mtimeMs) return null
+
+  // Оригінал не змінився. AVIF генеруємо тільки якщо його ще нема —
+  // повторні прогони не перекодовують одне й те саме.
+  if (avifPath && !existsSync(avifPath)) {
+    await writeAvif(readFileSync(imagePath), avifPath, imagePath)
+  }
+  consola.info(`${imagePath} already compressed (size+mtime match)`)
+  return { compressed: 0, orig: stat.size }
+}
+
+/**
  * Обробити один файл. Cache hit → пропуск. Інакше — стиснути і (у `--write`) перезаписати,
  * якщо економія > 15%. Cache mutates у місці; результат описує внесок у `stats`.
  * @param {string} imagePath — абсолютний шлях.
@@ -145,17 +192,23 @@ const processOne = async (imagePath, cache) => {
   if (!compressor) return { compressed: 0, orig: 0 }
 
   const relPath = cache ? relative(srcAbs, imagePath) : null
+  // `<name>.<ext>.avif` (а не `<name>.avif`) — щоб `ready.png` і `ready.jpg`
+  // не цілили в один `ready.avif` і не затирали один одного.
+  const avifPath = options.avif && cache && AVIF_SOURCE_EXTS.has(ext) ? `${imagePath}.avif` : null
 
   if (cache) {
-    const stat = statSync(imagePath)
-    const cached = cache.get(relPath)
-    if (cached && cached.size === stat.size && cached.mtime === stat.mtimeMs) {
-      consola.info(`${imagePath} already compressed (size+mtime match)`)
-      return { compressed: 0, orig: stat.size }
-    }
+    const hit = await tryCacheHit(imagePath, relPath, cache, avifPath)
+    if (hit) return hit
   }
 
   const image = readFileSync(imagePath)
+
+  // Перед стисненням — створюємо AVIF з ОРИГІНАЛУ (не зі стисненого), щоб
+  // не накладати артефакти двох кодеків. Cache miss → перезаписуємо без перевірок.
+  if (avifPath) {
+    await writeAvif(image, avifPath, imagePath)
+  }
+
   const compressedImage = await compressBuffer(image, compressor, imagePath)
   if (!compressedImage) return { compressed: 0, orig: image.length }
 
@@ -164,28 +217,26 @@ const processOne = async (imagePath, cache) => {
       `compressed size: ${prettyBytes(compressedImage.length)}`
   )
 
-  const result = { compressed: 0, orig: image.length }
-
-  if (cache) {
-    if (compressedImage.length * 1.15 < image.length) {
-      writeFileSync(imagePath, compressedImage)
-      consola.debug(`${imagePath} compressed`)
-      result.compressed = image.length - compressedImage.length
-    }
-    // Re-stat ПІСЛЯ можливого writeFileSync — щоб у cache потрапили нові size/mtime
-    const stat = statSync(imagePath)
-    const existing = cache.get(relPath)
-    cache.set(relPath, {
-      mtime: stat.mtimeMs,
-      originalSize: existing?.originalSize ?? image.length,
-      size: stat.size
-    })
-  } else {
+  if (!cache) {
     // estimate-режим: рахуємо raw-дельту (може бути від'ємною)
-    result.compressed = image.length - compressedImage.length
+    return { compressed: image.length - compressedImage.length, orig: image.length }
   }
 
-  return result
+  let compressed = 0
+  if (compressedImage.length * 1.15 < image.length) {
+    writeFileSync(imagePath, compressedImage)
+    consola.debug(`${imagePath} compressed`)
+    compressed = image.length - compressedImage.length
+  }
+  // Re-stat ПІСЛЯ можливого writeFileSync — щоб у cache потрапили нові size/mtime
+  const stat = statSync(imagePath)
+  const existing = cache.get(relPath)
+  cache.set(relPath, {
+    mtime: stat.mtimeMs,
+    originalSize: existing?.originalSize ?? image.length,
+    size: stat.size
+  })
+  return { compressed, orig: image.length }
 }
 
 const cache = options.write ? loadCache() : null

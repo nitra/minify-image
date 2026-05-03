@@ -2,7 +2,7 @@
   "name": "demo",
   "type": "module",
   "scripts": {
-    "start": "bun ../npm/src/index.js",
+    "start": "bun ../npm/src/index.js --write --avif",
     "test": "bun test"
   },
   "engines": {
