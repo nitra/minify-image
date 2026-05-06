@@ -233,6 +233,68 @@ const isSvgSprite = svgText => {
   return symbols !== null && symbols.length >= 2
 }
 
+// License/copyright-маркери, що вимагають збереження блоку (коментаря або <metadata>).
+// CC BY (4.0 і похідні) — Font Awesome icons, OFL — шрифти, MIT/BSD/Apache/ISC/(L|A)GPL/
+// MPL/EPL/Zlib/Artistic — коди. Окремий патерн для `creativecommons.org/licenses/by/...`
+// потрібен через RDF-метадані виду `<cc:license rdf:resource="https://...by/4.0/"/>` —
+// у тексті там URL, не «CC BY». Голий copyright (©, (c), copyright YYYY/Author) — теж
+// атрибуція: достатньо для CC0+© edge case, тож окремої гілки в shouldPreserveBlock не треба.
+const ATTRIBUTION_MARKERS = [
+  /\bCC[\s-]?BY(?:[\s-]?(?:SA|NC|ND))?(?:[\s-]?\d(?:\.\d)?)?\b/i,
+  /\bCreative\s+Commons\s+Attribution\b/i,
+  /creativecommons\.org\/licenses\/(?:by|by-sa|by-nc|by-nd)\b/i,
+  /\bMIT\s+Licen[sc]e\b/i,
+  /\bBSD(?:[\s-]?\d[\s-]?Clause)?\b/i,
+  /\bApache(?:[\s-]+Licen[sc]e|[\s-]+v?\d(?:\.\d)?)?\b/i,
+  /\bISC\s+Licen[sc]e\b/i,
+  /\bL?GPL(?:[\s-]?v?\d(?:\.\d)?)?\b/i,
+  /\bAGPL\b/i,
+  /\bMPL[\s-]?\d(?:\.\d)?\b/i,
+  /\bEPL[\s-]?\d(?:\.\d)?\b/i,
+  /\b(?:SIL\s+)?OFL\b/i,
+  /\bOpen\s+Font\s+Licen[sc]e\b/i,
+  /\bZlib\s+Licen[sc]e\b/i,
+  /\bArtistic\s+Licen[sc]e\b/i,
+  /(?:©|\(c\)|copyright)\s*(?:\d{4}|[a-z])/i
+]
+
+// Permissive-без-атрибуції: блок з самим CC0/Public Domain/Unlicense/WTFPL — стрипаємо.
+// Якщо в блоці поряд є copyright (©) — лишаємо: автор міг додати власний © поверх CC0.
+const PERMISSIVE_MARKERS = [
+  /\bCC0(?:[\s-]?\d(?:\.\d)?)?\b/i,
+  /\bCreative\s+Commons\s+Zero\b/i,
+  /\bPublic\s+Domain\b/i,
+  /\bUnlicense\b/i,
+  /\bWTFPL\b/i
+]
+
+const COPYRIGHT_MARKER = /(?:©|\(c\)|copyright)\s*(?:\d{4}|[a-z])/i
+
+// @param {string} text — об'єднаний текст блоку (коментар або плоский text+attrs <metadata>).
+// @returns {boolean} `true` — блок несе атрибуцію і має лишитись; `false` — можна вирізати.
+const shouldPreserveBlock = text => {
+  if (PERMISSIVE_MARKERS.some(re => re.test(text))) return COPYRIGHT_MARKER.test(text)
+  return ATTRIBUTION_MARKERS.some(re => re.test(text))
+}
+
+// `<metadata>...</metadata>` — раннє пре-вирізання. SVGO-плагін через AST не годиться:
+// preset-default `removeUnknownsAndDefaults` зрізає сторонні namespace-и (rdf/cc/dc)
+// всередині збереженого <metadata>, лишаючи `<metadata/>`. Тож обробляємо текстом:
+// license-bearing блоки виносимо в placeholder-коментар, після SVGO підставляємо
+// вербатим назад. Non-license <metadata> просто стирається.
+const METADATA_BLOCK_RE = /<metadata\b[\s\S]*?<\/metadata\s*>/gi
+const METADATA_PLACEHOLDER_PREFIX = 'N_MINIFY_KEEP_META_'
+const METADATA_PLACEHOLDER_SUFFIX = '_PLACEHOLDER'
+// eslint-disable-next-line security/detect-non-literal-regexp -- template-інтерполяція тільки наших module-scope констант, не user input
+const METADATA_PLACEHOLDER_DETECT_RE = new RegExp(
+  String.raw`${METADATA_PLACEHOLDER_PREFIX}\d+${METADATA_PLACEHOLDER_SUFFIX}`
+)
+// eslint-disable-next-line security/detect-non-literal-regexp -- template-інтерполяція тільки наших module-scope констант, не user input
+const METADATA_PLACEHOLDER_REPLACE_RE = new RegExp(
+  String.raw`<!--\s*${METADATA_PLACEHOLDER_PREFIX}(\d+)${METADATA_PLACEHOLDER_SUFFIX}\s*-->`,
+  'g'
+)
+
 // Sharp за замовчуванням викидає метадані (EXIF, tEXt). `mozjpeg: true` уже вмикає
 // `optimiseScans` (≡ progressive); `progressive: true` залишаємо явно для наочності.
 const compressors = {
@@ -243,31 +305,50 @@ const compressors = {
   '.svg': buf => {
     const text = buf.toString('utf8')
     if (isSvgSprite(text)) return buf
-    return Buffer.from(
-      svgoOptimize(text, {
-        plugins: [
-          {
-            name: 'preset-default',
-            params: {
-              overrides: {
-                // Не конвертувати `rgba(...,0)` → `transparent`: семантично еквівалентно,
-                // але деякі рендерери (зокрема SourceTree з темною темою) трактують
-                // короткий запис інакше і показують темне тло замість прозорого.
-                // Керує конвертацією кольорів у *атрибутах* (`fill="rgba(...)"`).
-                convertColors: { names2hex: true, rgb2hex: true, shortname: false, shorthex: true },
-                // CSS усередині `style="..."` обробляє `minifyStyles` (під капотом csso),
-                // і саме він перетворює `rgba(...,0)` → `transparent` — незалежно від
-                // `convertColors`. Вимикаємо цілком, щоб таке стиснення не псувало
-                // прев'ю в SourceTree-подібних рендерерах.
-                minifyStyles: false,
-                // Зберігати `<?xml version="1.0" encoding="utf-8"?>` — деякі парсери
-                // змінюють режим рендерингу без декларації.
-                removeXMLProcInst: false
-              }
+
+    // Перед SVGO виносимо license-bearing <metadata> у placeholder-коментар,
+    // який потім re-injection-имо вербатим. Non-license <metadata> просто стираємо.
+    const preserved = []
+    const stripped = text.replaceAll(METADATA_BLOCK_RE, match => {
+      if (!shouldPreserveBlock(match)) return ''
+      const idx = preserved.push(match) - 1
+      return `<!--${METADATA_PLACEHOLDER_PREFIX}${idx}${METADATA_PLACEHOLDER_SUFFIX}-->`
+    })
+
+    const optimized = svgoOptimize(stripped, {
+      plugins: [
+        {
+          name: 'preset-default',
+          params: {
+            overrides: {
+              // Не конвертувати `rgba(...,0)` → `transparent`: семантично еквівалентно,
+              // але деякі рендерери (зокрема SourceTree з темною темою) трактують
+              // короткий запис інакше і показують темне тло замість прозорого.
+              // Керує конвертацією кольорів у *атрибутах* (`fill="rgba(...)"`).
+              convertColors: { names2hex: true, rgb2hex: true, shortname: false, shorthex: true },
+              // CSS усередині `style="..."` обробляє `minifyStyles` (під капотом csso),
+              // і саме він перетворює `rgba(...,0)` → `transparent` — незалежно від
+              // `convertColors`. Вимикаємо цілком, щоб таке стиснення не псувало
+              // прев'ю в SourceTree-подібних рендерерах.
+              minifyStyles: false,
+              // Коментарі: лишаємо блоки з license/copyright-атрибуцією
+              // (CC BY, MIT, BSD, OFL, ©…) і наші placeholder-и для post-process
+              // re-injection <metadata>. Інструментальні `<!-- generated by ... -->`
+              // та CC0/Public Domain без © вирізаються. Дефолт preset-default —
+              // `[/^!/]` (тільки `<!--! ... -->`) — недостатній для Font Awesome
+              // та подібних, де license-блок не має префіксу `!`.
+              removeComments: { preservePatterns: [METADATA_PLACEHOLDER_DETECT_RE, ...ATTRIBUTION_MARKERS] },
+              // Зберігати `<?xml version="1.0" encoding="utf-8"?>` — деякі парсери
+              // змінюють режим рендерингу без декларації.
+              removeXMLProcInst: false
             }
           }
-        ]
-      }).data,
+        }
+      ]
+    }).data
+
+    return Buffer.from(
+      optimized.replaceAll(METADATA_PLACEHOLDER_REPLACE_RE, (_, idx) => preserved[Number(idx)]),
       'utf8'
     )
   }
