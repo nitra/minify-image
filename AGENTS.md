@@ -8,7 +8,10 @@ This file is the entry point for all AI agents working with this repository.
 
 The primary development rules are stored in the Cursor rules directory:
 
+
 - .cursor/rules/n-bun.mdc
+
+- .cursor/rules/n-changelog.mdc
 
 - .cursor/rules/n-ga.mdc
 
@@ -20,15 +23,19 @@ The primary development rules are stored in the Cursor rules directory:
 
 - .cursor/rules/n-text.mdc
 
+
 ## Skills
+
 
 - `.cursor/skills/n-fix/SKILL.md` — Виправити проєкт відповідно до всіх правил в .cursor/rules/
 
 - `.cursor/skills/n-lint/SKILL.md` — Запустити кореневий bun run lint, виправити порушення й підтвердити чистий вихід
 
+
 ## Commands
 
 Generated from the root `package.json` on each `npx @nitra/cursor` sync. Prefer `bun run <script>` for project scripts.
+
 
 - **Залежності**: `bun i`
 
@@ -45,6 +52,7 @@ Generated from the root `package.json` on each `npx @nitra/cursor` sync. Prefer 
 - **Оновити правила та AGENTS.md** (після змін у правилах/шаблоні CLI): `npx @nitra/cursor`
 
 - **Перевірки правил (programmatic)**: `npx @nitra/cursor check`
+
 
 ## Instructions for all agents
 

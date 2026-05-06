@@ -6,7 +6,7 @@
       "name": "minify-image",
       "devDependencies": {
         "@nitra/cspell-dict": "^2.1.0",
-        "@nitra/cursor": "^1.8.169",
+        "@nitra/cursor": "^1.8.184",
         "@nitra/eslint-config": "^3.8.0",
       },
     },
@@ -15,7 +15,7 @@
     },
     "npm": {
       "name": "@nitra/minify-image",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "bin": "src/index.js",
       "dependencies": {
         "calc-percent": "^1.0.1",
@@ -271,7 +271,7 @@
 
     "@nitra/cspell-dict": ["@nitra/cspell-dict@2.1.0", "", { "dependencies": { "@cspell/dict-bash": "^4.2.2", "@cspell/dict-csharp": "^4.0.8", "@cspell/dict-css": "^4.1.1", "@cspell/dict-docker": "^1.1.17", "@cspell/dict-html": "^4.0.15", "@cspell/dict-k8s": "^1.0.12", "@cspell/dict-kotlin": "^1.1.1", "@cspell/dict-lua": "^4.0.8", "@cspell/dict-markdown": "^2.0.16", "@cspell/dict-php": "^4.1.1", "@cspell/dict-python": "^4.2.26", "@cspell/dict-ro-ro": "^2.0.6", "@cspell/dict-ru_ru": "^2.3.2", "@cspell/dict-sql": "^2.2.1", "@cspell/dict-swift": "^2.0.6", "@cspell/dict-tr-tr": "^3.0.6", "@cspell/dict-uk-ua": "^4.0.6", "@cspell/dict-vue": "^3.0.5" } }, "sha512-d7+rsY7Jey0NJMXKiCKHG1VyYoT9rmyxofweW2imRwHhtBnluPYAhGRSb+CMQGxBY6RkWy4jwGnYBhKEhChFuQ=="],
 
-    "@nitra/cursor": ["@nitra/cursor@1.8.169", "", { "dependencies": { "oxc-parser": "^0.128.0", "yaml": "^2.8.3" }, "bin": { "n-cursor": "bin/n-cursor.js" } }, "sha512-IWDCc2PD//MBxNCtpNL89v1id2+yrLdzMUljXP7jaV9jym6aHRexBu5UCcd/rXu6jaF174gFyVuuhLFPVIREvQ=="],
+    "@nitra/cursor": ["@nitra/cursor@1.8.184", "", { "dependencies": { "oxc-parser": "^0.128.0", "yaml": "^2.8.3" }, "bin": { "n-cursor": "bin/n-cursor.js" } }, "sha512-rmake6KCl9iiqBL0pm686MPSq3OuNCvw5JLXbFvhGbXEydITf1df1LcjJrU1kyHt0wPRwFJ+odG9QnnAGPaUTg=="],
 
     "@nitra/eslint-config": ["@nitra/eslint-config@3.8.0", "", { "dependencies": { "@e18e/eslint-plugin": "^0.3.0", "@eslint/compat": "^2.0.5", "@eslint/js": "^10.0.1", "@graphql-eslint/eslint-plugin": "^4.4.0", "@graphql-tools/graphql-tag-pluck": "^8.3.30", "@graphql-tools/utils": "^11.0.1", "@microsoft/eslint-plugin-sdl": "^1.1.0", "eslint": "^10.2.0", "eslint-merge-processors": "^2.0.0", "eslint-plugin-import-x": "^4.16.2", "eslint-plugin-jsdoc": "^62.9.0", "eslint-plugin-jsonc": "^3.1.2", "eslint-plugin-markdown": "^5.1.0", "eslint-plugin-n": "^17.24.0", "eslint-plugin-no-unsanitized": "^4.1.5", "eslint-plugin-oxlint": "^1.60.0", "eslint-plugin-security": "^4.0.0", "eslint-plugin-sonarjs": "^4.0.3", "eslint-plugin-unicorn": "^64.0.0", "eslint-plugin-vue": "^10.8.0", "eslint-plugin-yml": "^3.3.1", "eslint-processor-vue-blocks": "^2.0.0", "globals": "^17.5.0", "graphql": "^16.13.2", "vue-eslint-parser": "^10.4.0" } }, "sha512-ZIhQ1HuZDPW/+HhM2CfP+sn06LOz7ie93+PGbayP1aTbTnYtbBsLxecaiThnHXIM2VJ3Jxc6HOvizKrvOxa0dA=="],
 

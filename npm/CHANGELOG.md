@@ -4,6 +4,31 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
+## [3.2.3] - 2026-05-06
+
+### Changed
+
+- SVGO `preset-default` запускається з overrides замість дефолтних:
+  `convertColors.shortname: false` — щоб `rgba(...,0)` в *атрибутах*
+  (`fill="rgba(...)"`) не схлопувався в `transparent`; `minifyStyles: false` —
+  щоб csso всередині `minifyStyles` не робив тієї ж конвертації для CSS у
+  `style="fill: rgba(...)"` (csso ігнорує опції `convertColors`, єдиний спосіб —
+  вимкнути плагін цілком); `removeXMLProcInst: false` — щоб зберігалась
+  `<?xml version="1.0" ?>`. Мотивація: семантично `transparent` рівнозначно
+  `rgba(...,0)`, але SourceTree та подібні рендерери з темною темою показують
+  такий запис як темне тло замість прозорого, а без XML-декларації частина
+  парсерів змінює режим рендерингу. Інші стиснення кольорів (`names2hex`,
+  `rgb2hex`, `shorthex`) і решта плагінів preset-default (mergePaths,
+  convertPathData, cleanupNumericValues тощо) працюють як раніше.
+
+## [3.2.2] - 2026-05-06
+
+### Fixed
+
+- Виведення `NaN%` у підсумкових рядках `Images optimized` / `Estimated saving`,
+  коли `glob` не знайшов жодного зображення (`stats.orig === 0`): `calcPercent`
+  при ділені `0/0` повертав `NaN`. Тепер при порожньому наборі показуємо `0%`.
+
 ## [3.2.1] - 2026-05-03
 
 ### Fixed

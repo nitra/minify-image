@@ -210,7 +210,34 @@ const compressors = {
   '.jpeg': buf => sharp(buf).jpeg({ mozjpeg: true, progressive: true }).toBuffer(),
   '.jpg': buf => sharp(buf).jpeg({ mozjpeg: true, progressive: true }).toBuffer(),
   '.png': buf => sharp(buf).png({ compressionLevel: 9, effort: 10, palette: true }).toBuffer(),
-  '.svg': buf => Buffer.from(svgoOptimize(buf.toString('utf8'), { plugins: [{ name: 'preset-default' }] }).data, 'utf8')
+  '.svg': buf =>
+    Buffer.from(
+      svgoOptimize(buf.toString('utf8'), {
+        plugins: [
+          {
+            name: 'preset-default',
+            params: {
+              overrides: {
+                // Не конвертувати `rgba(...,0)` → `transparent`: семантично еквівалентно,
+                // але деякі рендерери (зокрема SourceTree з темною темою) трактують
+                // короткий запис інакше і показують темне тло замість прозорого.
+                // Керує конвертацією кольорів у *атрибутах* (`fill="rgba(...)"`).
+                convertColors: { names2hex: true, rgb2hex: true, shortname: false, shorthex: true },
+                // CSS усередині `style="..."` обробляє `minifyStyles` (під капотом csso),
+                // і саме він перетворює `rgba(...,0)` → `transparent` — незалежно від
+                // `convertColors`. Вимикаємо цілком, щоб таке стиснення не псувало
+                // прев'ю в SourceTree-подібних рендерерах.
+                minifyStyles: false,
+                // Зберігати `<?xml version="1.0" encoding="utf-8"?>` — деякі парсери
+                // змінюють режим рендерингу без декларації.
+                removeXMLProcInst: false
+              }
+            }
+          }
+        ]
+      }).data,
+      'utf8'
+    )
 }
 
 // AVIF створюємо тільки для растрових форматів — для SVG (вектор) це безглуздо.
@@ -368,12 +395,11 @@ if (mtimeCache) saveMtimeCache(mtimeCache)
 if (hashCache) saveHashCache(hashCache)
 
 consola.info(`All image size: ${prettyBytes(stats.orig)}`)
+const savedPercent = stats.orig > 0 ? calcPercent(stats.compressed, stats.orig) : 0
 if (options.write) {
-  consola.info(
-    `Images optimized, saving: ${prettyBytes(stats.compressed)}, ${calcPercent(stats.compressed, stats.orig)}%`
-  )
+  consola.info(`Images optimized, saving: ${prettyBytes(stats.compressed)}, ${savedPercent}%`)
 } else {
-  consola.info(`Estimated saving: ${prettyBytes(stats.compressed)}, ${calcPercent(stats.compressed, stats.orig)}%`)
+  consola.info(`Estimated saving: ${prettyBytes(stats.compressed)}, ${savedPercent}%`)
 }
 
 if (hashCache && hashCache.size > 0) {
