@@ -75,14 +75,7 @@ const globOptions = {
   absolute: true,
   caseSensitiveMatch: false,
   cwd: options.src,
-  ignore: [
-    '**/node_modules/**',
-    '**/vendor/**',
-    '**/test/**',
-    '**/.*/**',
-    '**/dist/**',
-    ...options.ignore
-  ]
+  ignore: ['**/node_modules/**', '**/vendor/**', '**/test/**', '**/.*/**', '**/dist/**', ...options.ignore]
 }
 
 // Закомічений source of truth: SHA-1 + originalSize. Лежить у корені src — у git.
@@ -220,6 +213,26 @@ const saveHashCache = cache => {
   writeFileSync(join(srcAbs, HASH_CACHE_FILE), `${lines.join('\n')}\n`)
 }
 
+const SVG_ROOT_TAG_RE = /<svg\b[^>]*>/i
+const SVG_ROOT_HIDDEN_RE = /style\s*=\s*["'][^"']*display\s*:\s*none/i
+const SVG_SYMBOL_RE = /<symbol\b/gi
+
+// SVG-sprite (Font Awesome тощо): корінь — `<svg style="display:none">` з купою
+// `<symbol id="...">`, на які посилаються ззовні через `<use href="file.svg#id">`.
+// SVGO про зовнішні посилання не знає: `removeHiddenElems` зрізає весь вміст
+// прихованого кореня, а `cleanupIds` видаляє ID, які виглядають невикористаними
+// в межах файлу — `<symbol>`-и стають сиротами і теж знімаються. Підсумок —
+// 458 KB → 38 байт, тільки XML-декларація. Детектимо два сигнали (display:none
+// на корені або ≥2 `<symbol>` у файлі) і повністю пропускаємо оптимізацію.
+// @param {string} svgText — вміст SVG як utf-8 рядок.
+// @returns {boolean}
+const isSvgSprite = svgText => {
+  const root = svgText.match(SVG_ROOT_TAG_RE)
+  if (root && SVG_ROOT_HIDDEN_RE.test(root[0])) return true
+  const symbols = svgText.match(SVG_SYMBOL_RE)
+  return symbols !== null && symbols.length >= 2
+}
+
 // Sharp за замовчуванням викидає метадані (EXIF, tEXt). `mozjpeg: true` уже вмикає
 // `optimiseScans` (≡ progressive); `progressive: true` залишаємо явно для наочності.
 const compressors = {
@@ -227,9 +240,11 @@ const compressors = {
   '.jpeg': buf => sharp(buf).jpeg({ mozjpeg: true, progressive: true }).toBuffer(),
   '.jpg': buf => sharp(buf).jpeg({ mozjpeg: true, progressive: true }).toBuffer(),
   '.png': buf => sharp(buf).png({ compressionLevel: 9, effort: 10, palette: true }).toBuffer(),
-  '.svg': buf =>
-    Buffer.from(
-      svgoOptimize(buf.toString('utf8'), {
+  '.svg': buf => {
+    const text = buf.toString('utf8')
+    if (isSvgSprite(text)) return buf
+    return Buffer.from(
+      svgoOptimize(text, {
         plugins: [
           {
             name: 'preset-default',
@@ -255,6 +270,7 @@ const compressors = {
       }).data,
       'utf8'
     )
+  }
 }
 
 // AVIF створюємо тільки для растрових форматів — для SVG (вектор) це безглуздо.
