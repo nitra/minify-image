@@ -31,6 +31,9 @@ Options:
   --avif            With --write, create <name>.<ext>.avif (quality 40) next
                     to each raster image (PNG/JPEG/GIF) before compressing the
                     original.
+  --ignore=<glob>   Extra glob to exclude (repeatable). Always-on defaults
+                    (node_modules, vendor, test, dist, **/.*/**) залишаються
+                    активними. Приклад: --ignore="docs/**".
   -h, --help        Print this usage guide.
 `
 
@@ -39,6 +42,7 @@ const { positionals, values } = parseArgs({
   options: {
     avif: { default: false, type: 'boolean' },
     help: { default: false, short: 'h', type: 'boolean' },
+    ignore: { multiple: true, type: 'string' },
     src: { default: '.', type: 'string' },
     write: { default: false, type: 'boolean' }
   }
@@ -52,6 +56,7 @@ if (values.help) {
 // `--src=…` має пріоритет; якщо не заданий — fallback на перший positional, далі CWD.
 const options = {
   avif: values.avif,
+  ignore: values.ignore ?? [],
   src: values.src === '.' && positionals[0] ? positionals[0] : values.src,
   write: values.write
 }
@@ -61,11 +66,23 @@ const srcAbs = resolve(options.src)
 
 // `test/**` — тестові фікстури навмисно неоптимальні (мають перетинати поріг
 // 15% при реальному прогоні компресора), оптимізація зробила б їх непридатними.
+// `**/.*/**` — будь-які dot-директорії (`.git`, `.next`, `.cache`, `.idea` тощо):
+// технічні артефакти, не вихідні зображення, чіпати їх не треба.
+// `**/dist/**` — згенеровані бандли: образи там — копії з `src/`, оптимізувати
+// другий раз безглуздо (а CI наступного білду все одно перезапише).
+// Користувацькі `--ignore=<glob>` додаються згори дефолтів — вимкнути їх не можна.
 const globOptions = {
   absolute: true,
   caseSensitiveMatch: false,
   cwd: options.src,
-  ignore: ['**/node_modules/**', '**/vendor/**', '**/test/**']
+  ignore: [
+    '**/node_modules/**',
+    '**/vendor/**',
+    '**/test/**',
+    '**/.*/**',
+    '**/dist/**',
+    ...options.ignore
+  ]
 }
 
 // Закомічений source of truth: SHA-1 + originalSize. Лежить у корені src — у git.

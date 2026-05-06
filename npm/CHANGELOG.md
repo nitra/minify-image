@@ -4,12 +4,27 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
-## [3.2.3] - 2026-05-06
+## [3.2.4] - 2026-05-06
+
+### Added
+
+- CLI-опція `--ignore=<glob>` (повторювана) — дозволяє виключати з обробки
+  додаткові шляхи поза дефолтами. Приклад:
+  `npx @nitra/minify-image --src=. --write --ignore="docs/**"`.
+  Дефолтні ignore лишаються активними завжди — користувацькі додаються згори.
+
+### Changed (ignore defaults)
+
+- Розширено вшитий список ignore: додано `**/.*/**` (усі dot-директорії
+  на кшталт `.git`, `.next`, `.cache`, `.idea` — технічні артефакти, не
+  вихідні зображення) і `**/dist/**` (згенеровані збірки — копії з `src/`,
+  повторне стиснення безглузде). Повний дефолтний список:
+  `node_modules`, `vendor`, `test`, `**/.*/**`, `dist`.
 
 ### Changed
 
 - SVGO `preset-default` запускається з overrides замість дефолтних:
-  `convertColors.shortname: false` — щоб `rgba(...,0)` в *атрибутах*
+  `convertColors.shortname: false` — щоб `rgba(...,0)` в _атрибутах_
   (`fill="rgba(...)"`) не схлопувався в `transparent`; `minifyStyles: false` —
   щоб csso всередині `minifyStyles` не робив тієї ж конвертації для CSS у
   `style="fill: rgba(...)"` (csso ігнорує опції `convertColors`, єдиний спосіб —
