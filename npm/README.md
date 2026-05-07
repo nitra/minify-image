@@ -30,9 +30,19 @@ sibling `<name>.<ext>.avif` (e.g. `hero.png` → `hero.png.avif`) encoded from
 the **original** bytes (quality 40) before the original is compressed in
 place. The full source extension is kept in the AVIF filename so two images
 that share a basename (`hero.png` and `hero.jpg`) do not collide on the same
-`hero.avif`. SVG is skipped (vector → AVIF is pointless). On a cache hit the
-AVIF is created only when the file is missing; on a cache miss it is
-rewritten so it stays in sync with edits to the source image.
+`hero.avif`. SVG is skipped (vector → AVIF is pointless).
+
+The AVIF companion is regenerated whenever any of the following holds:
+
+1. `<source>.avif` is missing on disk.
+2. The current SHA-1 of `<source>` does not match the entry in
+   `.n-minify-image.tsv` (a previous run processed a different version of the
+   file — i.e. the source has been edited since).
+3. There is no entry for `<source>` in `.n-minify-image.tsv` yet (first run
+   on this file, or upgrade from a cache-less version).
+
+When the source is unchanged and `<source>.avif` already exists, both files
+are left untouched.
 
 ## Cache
 

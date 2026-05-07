@@ -5,6 +5,10 @@
     "start": "bun ../npm/src/index.js --write --avif",
     "test": "bun test"
   },
+  "devDependencies": {
+    "sharp": "^0.34.1",
+    "@nitra/cursor": "^1.8.184"
+  },
   "engines": {
     "bun": ">=1.3",
     "node": ">=24"

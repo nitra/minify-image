@@ -1,9 +1,11 @@
 import { test, expect } from 'bun:test'
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { crc32 } from 'node:zlib'
+// eslint-disable-next-line n/no-unpublished-import -- demo не публікується; sharp у devDependencies для генерації тестових PNG
+import sharp from 'sharp'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const cli = join(here, '..', '..', 'npm', 'src', 'index.js')
@@ -237,6 +239,159 @@ test('SVG: <metadata> з RDF cc:license URL → атрибуція через rd
   )
   const out = await minifySvg(svg)
   expect(out).toContain('creativecommons.org/licenses/by/4.0')
+}, 60_000)
+
+/**
+ * Будує solid-color PNG заданого кольору. Дві такі PNG з різним RGB дають
+ * різний AVIF-вивід байт-у-байт — зручний детектор повторного кодування.
+ * @param {{ r: number, g: number, b: number }} rgb — колір тла.
+ * @returns {Promise<Buffer>} вміст PNG.
+ */
+const solidPng = rgb =>
+  sharp({ create: { background: rgb, channels: 3, height: 64, width: 64 } })
+    .png()
+    .toBuffer()
+
+/**
+ * Запустити CLI і ствердити успішний вихід, не вертаючи stdout (його легко
+ * губить throttling consola у швидкоплинних запусках). Використовуємо коли
+ * перевіряємо стан файлової системи, а не консольний вивід.
+ * @param {string[]} args — аргументи CLI.
+ * @param {string} cwd — робоча директорія.
+ */
+const runCliOk = async (args, cwd) => {
+  const result = await runCli(args, cwd)
+  expect(result.exitCode).toBe(0)
+}
+
+test('--avif: регенерує .avif коли вміст оригіналу змінюється (slow-path cache miss)', async () => {
+  const workDir = mkdtempSync(join(tmpdir(), 'minify-image-avif-'))
+  try {
+    const target = join(workDir, 'a.png')
+    const avifPath = `${target}.avif`
+    writeFileSync(target, await solidPng({ b: 0, g: 0, r: 255 }))
+
+    const first = await runCli([`--src=${workDir}`, '--write', '--avif'], workDir)
+    expect(first.exitCode).toBe(0)
+    expect(existsSync(avifPath)).toBe(true)
+    const avifV1 = readFileSync(avifPath)
+
+    // Підмінюємо файл на інший вміст (новий sha1, інші пікселі — AVIF-вивід
+    // гарантовано буде різним байт-у-байт).
+    writeFileSync(target, await solidPng({ b: 255, g: 0, r: 0 }))
+
+    const second = await runCli([`--src=${workDir}`, '--write', '--avif'], workDir)
+    expect(second.exitCode).toBe(0)
+    expect(existsSync(avifPath)).toBe(true)
+    const avifV2 = readFileSync(avifPath)
+    expect(avifV2.equals(avifV1)).toBe(false)
+  } finally {
+    rmSync(workDir, { force: true, recursive: true })
+  }
+}, 60_000)
+
+test('--avif: лишає .avif незмінним коли оригінал не редагували', async () => {
+  const workDir = mkdtempSync(join(tmpdir(), 'minify-image-avif-'))
+  try {
+    const target = join(workDir, 'a.png')
+    const avifPath = `${target}.avif`
+    writeFileSync(target, await solidPng({ b: 0, g: 0, r: 255 }))
+
+    await runCliOk([`--src=${workDir}`, '--write', '--avif'], workDir)
+    const avifV1 = readFileSync(avifPath)
+
+    await runCliOk([`--src=${workDir}`, '--write', '--avif'], workDir)
+    const avifV2 = readFileSync(avifPath)
+    expect(avifV2.equals(avifV1)).toBe(true)
+  } finally {
+    rmSync(workDir, { force: true, recursive: true })
+  }
+}, 60_000)
+
+test('--avif: регенерує .avif коли він зник з диска (cache hit + missing AVIF)', async () => {
+  const workDir = mkdtempSync(join(tmpdir(), 'minify-image-avif-'))
+  try {
+    const target = join(workDir, 'a.png')
+    const avifPath = `${target}.avif`
+    writeFileSync(target, await solidPng({ b: 0, g: 0, r: 255 }))
+
+    await runCliOk([`--src=${workDir}`, '--write', '--avif'], workDir)
+    expect(existsSync(avifPath)).toBe(true)
+
+    unlinkSync(avifPath)
+    expect(existsSync(avifPath)).toBe(false)
+
+    await runCliOk([`--src=${workDir}`, '--write', '--avif'], workDir)
+    expect(existsSync(avifPath)).toBe(true)
+  } finally {
+    rmSync(workDir, { force: true, recursive: true })
+  }
+}, 60_000)
+
+test('--avif: регенерує .avif коли запису в .n-minify-image.tsv ще нема', async () => {
+  const workDir = mkdtempSync(join(tmpdir(), 'minify-image-avif-'))
+  try {
+    const target = join(workDir, 'a.png')
+    const avifPath = `${target}.avif`
+    writeFileSync(target, await solidPng({ b: 0, g: 0, r: 255 }))
+    // Заглушка-AVIF, написана не нашим CLI, без жодного TSV-кеша поряд —
+    // моделює сценарій upgrade з 3.1 → 3.2+, де AVIF лежить, а hash-кешу нема.
+    const stub = Buffer.from('not-a-real-avif-stub')
+    writeFileSync(avifPath, stub)
+    expect(existsSync(join(workDir, cacheFileName))).toBe(false)
+
+    await runCliOk([`--src=${workDir}`, '--write', '--avif'], workDir)
+
+    const avifAfter = readFileSync(avifPath)
+    expect(avifAfter.equals(stub)).toBe(false)
+    expect(avifAfter.length).toBeGreaterThan(stub.length)
+  } finally {
+    rmSync(workDir, { force: true, recursive: true })
+  }
+}, 60_000)
+
+test('--avif: оновлює sha1 у .n-minify-image.tsv після регенерації', async () => {
+  const workDir = mkdtempSync(join(tmpdir(), 'minify-image-avif-'))
+  try {
+    const target = join(workDir, 'a.png')
+    writeFileSync(target, await solidPng({ b: 0, g: 0, r: 255 }))
+    await runCliOk([`--src=${workDir}`, '--write', '--avif'], workDir)
+
+    const tsvPath = join(workDir, cacheFileName)
+    const sha1V1 = readFileSync(tsvPath, 'utf8').trim().split('\t')[1]
+    expect(SHA1_HEX_RE.test(sha1V1)).toBe(true)
+
+    writeFileSync(target, await solidPng({ b: 255, g: 0, r: 0 }))
+    await runCliOk([`--src=${workDir}`, '--write', '--avif'], workDir)
+
+    const sha1V2 = readFileSync(tsvPath, 'utf8').trim().split('\t')[1]
+    expect(SHA1_HEX_RE.test(sha1V2)).toBe(true)
+    expect(sha1V2).not.toBe(sha1V1)
+  } finally {
+    rmSync(workDir, { force: true, recursive: true })
+  }
+}, 60_000)
+
+test('--avif вимкнено: оригінал стискається, але .avif не оновлюється', async () => {
+  const workDir = mkdtempSync(join(tmpdir(), 'minify-image-avif-'))
+  try {
+    const target = join(workDir, 'a.png')
+    const avifPath = `${target}.avif`
+    writeFileSync(target, await solidPng({ b: 0, g: 0, r: 255 }))
+
+    await runCliOk([`--src=${workDir}`, '--write', '--avif'], workDir)
+    const avifV1 = readFileSync(avifPath)
+
+    writeFileSync(target, await solidPng({ b: 255, g: 0, r: 0 }))
+    // Без --avif: компресор для PNG усе одно спрацює, sha1 у TSV оновиться,
+    // але AVIF-двійник не повинен переписатися.
+    await runCliOk([`--src=${workDir}`, '--write'], workDir)
+
+    const avifAfter = readFileSync(avifPath)
+    expect(avifAfter.equals(avifV1)).toBe(true)
+  } finally {
+    rmSync(workDir, { force: true, recursive: true })
+  }
 }, 60_000)
 
 test('--write: реально перезаписує файл коли економія >15%', async () => {
