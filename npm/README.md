@@ -20,7 +20,9 @@ npx @nitra/minify-image --src=.
 --avif            With --write, create <name>.<ext>.avif (quality 40) next
                   to each raster image (PNG/JPEG/GIF) before compressing the
                   original. AVIF generation is skipped inside build/wrapper/cache
-                  directories (dist, build, android, ios, .output, .nuxt, .cache).
+                  directories (dist, build, android, ios, .output, .nuxt, .cache),
+                  and per-package when the nearest package.json contains
+                  `{ "@nitra/minify-image": { "disable-avif": true } }`.
 -h, --help        Print this usage guide.
 ```
 
@@ -53,6 +55,37 @@ images may exist (Capacitor wrappers, custom build outputs) but native
 runtimes do not consume AVIF and the files would be wiped on the next
 sync/build anyway. Match is by path segment, so a project named `dist-doc/`
 is **not** affected.
+
+### Per-package opt-out
+
+Workspaces that should not get `.avif` companions can opt out by adding the
+flag to their `package.json`:
+
+```json
+{
+  "name": "site",
+  "@nitra/minify-image": {
+    "disable-avif": true
+  }
+}
+```
+
+For each image the CLI walks up the directory tree until it finds the nearest
+`package.json`; if that file has `"@nitra/minify-image": { "disable-avif": true }`,
+no `.avif` companion is generated for that image (the original is still
+compressed in place — opt-out applies to AVIF only). The walk stops at the
+first `package.json` found, so a flag on the workspace `package.json` does not
+need to be repeated on the root one.
+
+This mirrors the cleanup contract on the [@nitra/cursor](https://www.npmjs.com/package/@nitra/cursor)
+side (rule `image-avif`): both tools read the same flag, so AVIF generation
+and orphan-AVIF cleanup stay in sync. After flipping `disable-avif` to `true`,
+existing `.avif` files inside the package have to be removed once by hand —
+they will not be regenerated:
+
+```bash
+find <pkg> -name "*.avif" -delete
+```
 
 ## Cache
 

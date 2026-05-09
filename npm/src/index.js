@@ -30,9 +30,12 @@ Options:
   --src=<dir>       The directory to process. (default: ".")
   --avif            With --write, create <name>.<ext>.avif (quality 40) next
                     to each raster image (PNG/JPEG/GIF) before compressing the
-                    original. Skips build/wrapper/cache directories
-                    (dist, build, android, ios, .output, .nuxt, .cache) —
-                    AVIF is not generated inside them.
+                    original. Skipped inside dist/, build/, android/, ios/,
+                    .output/, .nuxt/, .cache/. Also skipped per-package when
+                    package.json contains
+                    { "@nitra/minify-image": { "disable-avif": true } } —
+                    mirrors @nitra/cursor's image-avif opt-out so the two
+                    sides agree on what to generate vs delete.
   --ignore=<glob>   Extra glob to exclude (repeatable). Always-on defaults
                     (node_modules, vendor, test, dist, **/.*/**) залишаються
                     активними. Приклад: --ignore="docs/**".
@@ -369,6 +372,82 @@ const AVIF_SOURCE_EXTS = new Set(['.gif', '.jpeg', '.jpg', '.png'])
 const AVIF_IGNORE_PATH_RE = /(?:^|[/\\])(?:dist|build|android|ios|\.output|\.nuxt|\.cache)(?:[/\\]|$)/i
 
 /**
+ * Кеш «найближчий package.json вище за каталог із disable-avif». Узгоджено з
+ * `@nitra/cursor` (`@nitra/minify-image.disable-avif` у package.json workspace-пакета):
+ * якщо файл лежить усередині пакета з opt-out — AVIF-двійник для нього не створюємо
+ * (а звичайне стиснення лишається). Кешуємо по каталогу, бо для тисяч зображень
+ * у тому ж пакеті відповідь та сама.
+ *
+ * Ключ: абсолютний шлях каталогу. Значення: boolean (true ⇒ opt-out активний).
+ * @type {Map<string, boolean>}
+ */
+const dirAvifOptOutCache = new Map()
+
+/**
+ * Прочитати opt-out-прапорець із `<dir>/package.json`. Повертає:
+ * - `true`/`false` — файл присутній і валідний JSON (= межа найближчого пакета);
+ * - `null` — файла нема або JSON битий (поводимось як «нема» — caller іде вище).
+ *
+ * Битий package.json свідомо не валить CLI: для AVIF-генерації це м'який сигнал,
+ * не критичний (звичайне стиснення оригіналу від цього не залежить).
+ * @param {string} dir — абсолютний шлях каталогу.
+ * @returns {boolean | null} `true`/`false` ⇒ межа пакета знайдена; `null` ⇒ йти вище.
+ */
+const readDirAvifOptOut = dir => {
+  const pkgPath = join(dir, 'package.json')
+  if (!existsSync(pkgPath)) return null
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+    return pkg?.['@nitra/minify-image']?.['disable-avif'] === true
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Записати остаточну відповідь у `dirAvifOptOutCache` для всіх відвіданих каталогів
+ * і повернути її. Дозволяє caller-у уникнути вкладеного циклу на кожному ранньому
+ * виході (важливо для cognitive-complexity ліміту).
+ * @param {string[]} visited — каталоги, що чекали відповіді під час walk-up.
+ * @param {boolean} value — фінальна opt-out-відповідь.
+ * @returns {boolean} та сама `value`.
+ */
+const cacheAvifOptOut = (visited, value) => {
+  for (const v of visited) dirAvifOptOutCache.set(v, value)
+  return value
+}
+
+/**
+ * Чи файл лежить у workspace-пакеті з `"@nitra/minify-image": { "disable-avif": true }`?
+ * Іде вгору по дереву каталогів від `imagePath` до `srcAbs` (включно), на кожному
+ * рівні шукає `package.json`. Перший знайдений (= найближчий до файлу) визначає
+ * відповідь. Якщо до `srcAbs` не зустрів жодного — opt-out не активний.
+ *
+ * Семантика «зупинись на першому package.json»: у monorepo один package.json лежить
+ * у корені й по одному в кожному workspace. Прапорець ставлять у workspace-пакеті,
+ * не в кореневому.
+ * Якщо найближчий package.json не має opt-out — пакет його не хоче, і шукати вище
+ * нема сенсу (інакше прапорець на root-package.json випадково вимкнув би AVIF
+ * для всіх workspace-ів).
+ * @param {string} imagePath — абсолютний шлях зображення.
+ * @returns {boolean} `true` ⇒ для цього файлу AVIF не створювати; `false` ⇒ створювати як зазвичай.
+ */
+const isAvifOptedOut = imagePath => {
+  const visited = []
+  let dir = dirname(imagePath)
+  for (;;) {
+    const cached = dirAvifOptOutCache.get(dir)
+    if (cached !== undefined) return cacheAvifOptOut(visited, cached)
+    visited.push(dir)
+    const fromPkg = readDirAvifOptOut(dir)
+    if (fromPkg !== null) return cacheAvifOptOut(visited, fromPkg)
+    const parent = dirname(dir)
+    if (parent === dir || dir === srcAbs) return cacheAvifOptOut(visited, false)
+    dir = parent
+  }
+}
+
+/**
  * Кодує буфер у AVIF (quality 40) і записує поряд з оригіналом.
  * @param {Buffer} image — буфер оригіналу.
  * @param {string} avifPath — куди писати .avif.
@@ -460,7 +539,11 @@ const processOne = async (imagePath, mtimeCache, hashCache) => {
   // мініфікатор всередині директорії з ім'ям `dist`/`build`/тощо, її ім'я в абсолютному
   // шляху не блокувало AVIF для всього проєкту.
   const avifPath =
-    options.avif && usingCache && AVIF_SOURCE_EXTS.has(ext) && !AVIF_IGNORE_PATH_RE.test(relPath)
+    options.avif &&
+    usingCache &&
+    AVIF_SOURCE_EXTS.has(ext) &&
+    !AVIF_IGNORE_PATH_RE.test(relPath) &&
+    !isAvifOptedOut(imagePath)
       ? `${imagePath}.avif`
       : null
 
