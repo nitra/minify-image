@@ -30,7 +30,9 @@ Options:
   --src=<dir>       The directory to process. (default: ".")
   --avif            With --write, create <name>.<ext>.avif (quality 40) next
                     to each raster image (PNG/JPEG/GIF) before compressing the
-                    original.
+                    original. Skips build/wrapper/cache directories
+                    (dist, build, android, ios, .output, .nuxt, .cache) —
+                    AVIF is not generated inside them.
   --ignore=<glob>   Extra glob to exclude (repeatable). Always-on defaults
                     (node_modules, vendor, test, dist, **/.*/**) залишаються
                     активними. Приклад: --ignore="docs/**".
@@ -357,6 +359,15 @@ const compressors = {
 // AVIF створюємо тільки для растрових форматів — для SVG (вектор) це безглуздо.
 const AVIF_SOURCE_EXTS = new Set(['.gif', '.jpeg', '.jpg', '.png'])
 
+// `--avif` пропускає build-outputs і wrapper-директорії: `dist`/`build` (Vite/webpack/Rollup),
+// `android`/`ios` (Capacitor copy образів у нативні проєкти — native runtime не читає AVIF
+// і Capacitor затирає файли при `cap sync`), `.output`/`.nuxt`/`.cache` (Nuxt і generic кеші).
+// Більшість уже зрізає global ignore (`**/dist/**`, `**/.*/**`), але `build`, `android`, `ios`
+// глобально не зрізаються (там можуть бути валідні committed-картинки) — тому зрізаємо лише
+// AVIF-генерацію, мінімізація оригіналу й далі працює як зазвичай.
+// Перевіряється по segment-у відносного шляху, щоб не ловити false-positive типу `dist-doc/`.
+const AVIF_IGNORE_PATH_RE = /(?:^|[/\\])(?:dist|build|android|ios|\.output|\.nuxt|\.cache)(?:[/\\]|$)/i
+
 /**
  * Кодує буфер у AVIF (quality 40) і записує поряд з оригіналом.
  * @param {Buffer} image — буфер оригіналу.
@@ -445,7 +456,13 @@ const processOne = async (imagePath, mtimeCache, hashCache) => {
   const relPath = usingCache ? relative(srcAbs, imagePath) : null
   // `<name>.<ext>.avif` (а не `<name>.avif`) — щоб `ready.png` і `ready.jpg`
   // не цілили в один `ready.avif` і не затирали один одного.
-  const avifPath = options.avif && usingCache && AVIF_SOURCE_EXTS.has(ext) ? `${imagePath}.avif` : null
+  // AVIF_IGNORE_PATH_RE тестується по relPath (не imagePath), щоб коли користувач запускає
+  // мініфікатор всередині директорії з ім'ям `dist`/`build`/тощо, її ім'я в абсолютному
+  // шляху не блокувало AVIF для всього проєкту.
+  const avifPath =
+    options.avif && usingCache && AVIF_SOURCE_EXTS.has(ext) && !AVIF_IGNORE_PATH_RE.test(relPath)
+      ? `${imagePath}.avif`
+      : null
 
   if (usingCache) {
     const hit = await tryCacheHit(imagePath, relPath, mtimeCache, hashCache, avifPath)

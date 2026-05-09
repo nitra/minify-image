@@ -19,7 +19,8 @@ npx @nitra/minify-image --src=.
 --src directory   The directory to process.
 --avif            With --write, create <name>.<ext>.avif (quality 40) next
                   to each raster image (PNG/JPEG/GIF) before compressing the
-                  original.
+                  original. AVIF generation is skipped inside build/wrapper/cache
+                  directories (dist, build, android, ios, .output, .nuxt, .cache).
 -h, --help        Print this usage guide.
 ```
 
@@ -43,6 +44,15 @@ The AVIF companion is regenerated whenever any of the following holds:
 
 When the source is unchanged and `<source>.avif` already exists, both files
 are left untouched.
+
+`.avif` companions are **not** created inside build-output, wrapper, or cache
+directories — `dist/`, `build/`, `android/`, `ios/`, `.output/`, `.nuxt/`,
+`.cache/`. Mostly these dirs are already excluded from minification globally;
+the `--avif` filter additionally covers `build/`, `android/`, `ios/`, where
+images may exist (Capacitor wrappers, custom build outputs) but native
+runtimes do not consume AVIF and the files would be wiped on the next
+sync/build anyway. Match is by path segment, so a project named `dist-doc/`
+is **not** affected.
 
 ## Cache
 

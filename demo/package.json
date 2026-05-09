@@ -6,8 +6,7 @@
     "test": "bun test"
   },
   "devDependencies": {
-    "sharp": "^0.34.1",
-    "@nitra/cursor": "^1.8.184"
+    "sharp": "^0.34.1"
   },
   "engines": {
     "bun": ">=1.3",
