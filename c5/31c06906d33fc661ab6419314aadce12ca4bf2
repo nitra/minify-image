@@ -1,0 +1,68 @@
+.cursor/rules/n-text.mdc
+  s_318455225084f4::t_a53e080b43968e 2,4,7,16,116-117,123,191,239,256,298
+CLAUDE.md
+  s_318455225084f4::t_a53e080b43968e 3,7,23-26
+.claude/settings.json
+  s_318455225084f4::t_a53e080b43968e 23-33
+.cursor/rules/n-js-lint.mdc
+  s_318455225084f4::t_a53e080b43968e 4,7,28
+.vscode/extensions.json
+  s_318455225084f4::t_dd234225816b9c 7
+.cursor/skills/n-taze/SKILL.md
+  s_318455225084f4::t_39991e6f46bb37 69
+  s_318455225084f4::t_a53e080b43968e 1-68,70-107
+.claude/hooks/capture-decisions.sh
+  s_318455225084f4::t_a53e080b43968e 1-154
+.cspell.json
+  s_318455225084f4::t_1db8ed139e6d35 30
+  s_318455225084f4::t_568d17c8f95caf 42,46-48
+  s_318455225084f4::t_d91b314acd27fc 54
+  s_318455225084f4::t_bb4935d4b3585a 31,33
+AGENTS.md
+  s_318455225084f4::t_a53e080b43968e 11-12,19-20,35-38
+npm/jsconfig.json
+  s_318455225084f4::t_8da8ab07693c7f 1-10
+package.json
+  s_318455225084f4::t_679c1bf9aecee4 16
+.claude/commands/n-publish-telegram.md
+  s_318455225084f4::t_a53e080b43968e 1-8
+.gitignore
+  s_318455225084f4::t_181fe08a86e6ca 17-19
+.claude/commands/n-taze.md
+  s_318455225084f4::t_a53e080b43968e 1-8
+.cursor/rules/n-image-compress.mdc
+  s_318455225084f4::t_a53e080b43968e 1-58
+.cursor/rules/n-npm-module.mdc
+  s_318455225084f4::t_a53e080b43968e 4,50-53,60-61,105
+.github/workflows/npm-publish.yml
+  s_318455225084f4::t_c155398e8fb26d 31-33
+.cursor/rules/n-js-run.mdc
+  s_318455225084f4::t_a53e080b43968e 4,31-49,124-164,199-210,233-239
+.cursor/skills/n-publish-telegram/SKILL.md
+  s_318455225084f4::t_a53e080b43968e 1-94
+npm/CHANGELOG.md
+  s_318455225084f4::t_39991e6f46bb37 28
+  s_318455225084f4::t_e8ec618a8ca157 7-13
+.cursor/rules/n-adr.mdc
+  s_318455225084f4::t_a53e080b43968e 1-86
+.n-cursor.json
+  s_318455225084f4::t_39991e6f46bb37 3-4
+npm/package.json
+  s_318455225084f4::t_17598bc015b0e0 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "c531c06906d33fc661ab6419314aadce12ca4bf2",
+  "prompts": {},
+  "sessions": {
+    "s_318455225084f4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b712831f-fb1f-46ba-8562-3313b3127de5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
