@@ -8,11 +8,15 @@ This file is the entry point for all AI agents working with this repository.
 
 The primary development rules are stored in the Cursor rules directory:
 
+- .cursor/rules/n-adr.mdc
+
 - .cursor/rules/n-bun.mdc
 
 - .cursor/rules/n-changelog.mdc
 
 - .cursor/rules/n-ga.mdc
+
+- .cursor/rules/n-image-compress.mdc
 
 - .cursor/rules/n-js-lint.mdc
 
@@ -27,6 +31,10 @@ The primary development rules are stored in the Cursor rules directory:
 - `.cursor/skills/n-fix/SKILL.md` — Виправити проєкт відповідно до всіх правил в .cursor/rules/
 
 - `.cursor/skills/n-lint/SKILL.md` — Запустити кореневий bun run lint, виправити порушення й підтвердити чистий вихід
+
+- `.cursor/skills/n-publish-telegram/SKILL.md` — Підготовка матеріалу з поточного контексту для публікації в Telegram-каналі команди
+
+- `.cursor/skills/n-taze/SKILL.md` — Оновлення версій модулів проекту з аналізом major-змін і автоматичним рефакторингом несумісного коду
 
 ## Commands
 

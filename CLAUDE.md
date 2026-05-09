@@ -1,8 +1,10 @@
 <!-- Цей файл генерується автоматично через `npx @nitra/cursor`. Не редагуй вручну. -->
 
+@.cursor/rules/n-adr.mdc
 @.cursor/rules/n-bun.mdc
 @.cursor/rules/n-changelog.mdc
 @.cursor/rules/n-ga.mdc
+@.cursor/rules/n-image-compress.mdc
 @.cursor/rules/n-js-lint.mdc
 @.cursor/rules/n-js-run.mdc
 @.cursor/rules/n-npm-module.mdc
@@ -18,3 +20,7 @@
   Команда: `/n-fix`
 - `.cursor/skills/n-lint/SKILL.md` — Запустити кореневий bun run lint, виправити порушення й підтвердити чистий вихід
   Команда: `/n-lint`
+- `.cursor/skills/n-publish-telegram/SKILL.md` — Підготовка матеріалу з поточного контексту для публікації в Telegram-каналі команди
+  Команда: `/n-publish-telegram`
+- `.cursor/skills/n-taze/SKILL.md` — Оновлення версій модулів проекту з аналізом major-змін і автоматичним рефакторингом несумісного коду
+  Команда: `/n-taze`

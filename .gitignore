@@ -15,3 +15,5 @@ node_modules/
 
 # Manual demo playground (demo/play.js writes here)
 demo/play-output/
+
+.claude/hooks/capture-decisions.log
