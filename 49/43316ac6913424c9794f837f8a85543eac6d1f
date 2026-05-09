@@ -1,0 +1,38 @@
+demo/test/avif-opt-out.test.js
+  s_e72e924eb4292c::t_d22224784b3105 48
+  s_e72e924eb4292c::t_94baf0ac90255d 1-42,44-47,49-97,99-146
+  s_e72e924eb4292c::t_7a1118c02c06b7 43
+npm/package.json
+  s_e72e924eb4292c::t_5f80515fdd2816 3
+npm/src/index.js
+  s_e72e924eb4292c::t_6d61d379ec7ff6 376,433
+  s_e72e924eb4292c::t_b3a4e11983aed8 408-420
+  s_e72e924eb4292c::t_04ce1ec1b81d59 33-38
+  s_e72e924eb4292c::t_1c0b74095b561d 375,377-386,421-425,429-430,432,434-439,441,444,446-449
+  s_e72e924eb4292c::t_80dd18812eefb1 387-407,431,442
+  s_e72e924eb4292c::t_0828623672065a 426-428
+  s_e72e924eb4292c::t_aea670ce86eb8a 440,443,445
+  s_e72e924eb4292c::t_bf6fd79b733385 542-546
+npm/CHANGELOG.md
+  s_e72e924eb4292c::t_3ba24f921657f2 17-19
+  s_e72e924eb4292c::t_252c8bb062dbfb 7-16,20-27
+npm/README.md
+  s_e72e924eb4292c::t_1c566cd49e5d69 59-89
+  s_e72e924eb4292c::t_ad3db08a3348d2 23-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "4943316ac6913424c9794f837f8a85543eac6d1f",
+  "prompts": {},
+  "sessions": {
+    "s_e72e924eb4292c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c2ae99e-2205-4bdd-9d59-83e7e48069e9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
