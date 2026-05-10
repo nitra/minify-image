@@ -1,0 +1,31 @@
+docs/ci4/README.md
+  s_990c7018b99b1a::t_b0fb0da4e06653 6,61,107-111,117-120
+  s_990c7018b99b1a::t_39fb5705cc3594 70
+  s_990c7018b99b1a::t_0176ecbc107edb 45-48
+  s_990c7018b99b1a::t_66754b3b3b18ff 73-74
+  s_990c7018b99b1a::t_25557d728fad84 80-81
+  s_990c7018b99b1a::t_7aa7b09509a075 115
+docs/adr/_inbox/20260510-180825-d094d8d9.md
+  ai_agent 1-45
+docs/adr/_inbox/20260510-182502-d094d8d9.md
+  ai_agent 1-84
+npm/README.md
+  s_990c7018b99b1a::t_83b565ea37bd17 10
+  s_990c7018b99b1a::t_801f8af8174a2a 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "91b2d1dcd4e6465c304a1f55bea76e5dfcc61233",
+  "prompts": {},
+  "sessions": {
+    "s_990c7018b99b1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d094d8d9-643b-4e45-a379-23c9e6d2a594",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
