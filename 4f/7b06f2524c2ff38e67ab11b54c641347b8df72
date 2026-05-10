@@ -1,0 +1,14 @@
+.n-cursor.json
+  h_74546f1f1ded3e 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "4f7b06f2524c2ff38e67ab11b54c641347b8df72",
+  "prompts": {},
+  "humans": {
+    "h_74546f1f1ded3e": {
+      "author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
