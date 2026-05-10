@@ -6,6 +6,8 @@
 
 Minify images in directory, if compressed size lower than 15%
 
+> Architecture / system context: see [docs/ci4/](../docs/ci4/) (C4 model — context, container, component levels).
+
 ## Example run
 
 ```bash
