@@ -37,8 +37,8 @@ Options:
                     mirrors @nitra/cursor's image-avif opt-out so the two
                     sides agree on what to generate vs delete.
   --ignore=<glob>   Extra glob to exclude (repeatable). Always-on defaults
-                    (node_modules, vendor, test, dist, **/.*/**) залишаються
-                    активними. Приклад: --ignore="docs/**".
+                    (node_modules, vendor, test, dist, src-tauri/icons,
+                    **/.*/**) залишаються активними. Приклад: --ignore="docs/**".
   -h, --help        Print this usage guide.
 `
 
@@ -75,12 +75,24 @@ const srcAbs = resolve(options.src)
 // технічні артефакти, не вихідні зображення, чіпати їх не треба.
 // `**/dist/**` — згенеровані бандли: образи там — копії з `src/`, оптимізувати
 // другий раз безглуздо (а CI наступного білду все одно перезапише).
+// `**/src-tauri/icons/**` — канонічна локація іконок Tauri (генерується
+// `tauri icon` CLI). Квантизація RGBA-PNG у palette там ламає
+// `tauri::generate_context!` (panic «icon … is not RGBA»), а користь —
+// нульова: іконки все одно дрібні.
 // Користувацькі `--ignore=<glob>` додаються згори дефолтів — вимкнути їх не можна.
 const globOptions = {
   absolute: true,
   caseSensitiveMatch: false,
   cwd: options.src,
-  ignore: ['**/node_modules/**', '**/vendor/**', '**/test/**', '**/.*/**', '**/dist/**', ...options.ignore]
+  ignore: [
+    '**/node_modules/**',
+    '**/vendor/**',
+    '**/test/**',
+    '**/.*/**',
+    '**/dist/**',
+    '**/src-tauri/icons/**',
+    ...options.ignore
+  ]
 }
 
 // Закомічений source of truth: SHA-1 + originalSize. Лежить у корені src — у git.
@@ -362,14 +374,20 @@ const compressors = {
 // AVIF створюємо тільки для растрових форматів — для SVG (вектор) це безглуздо.
 const AVIF_SOURCE_EXTS = new Set(['.gif', '.jpeg', '.jpg', '.png'])
 
-// `--avif` пропускає build-outputs і wrapper-директорії: `dist`/`build` (Vite/webpack/Rollup),
-// `android`/`ios` (Capacitor copy образів у нативні проєкти — native runtime не читає AVIF
-// і Capacitor затирає файли при `cap sync`), `.output`/`.nuxt`/`.cache` (Nuxt і generic кеші).
-// Більшість уже зрізає global ignore (`**/dist/**`, `**/.*/**`), але `build`, `android`, `ios`
-// глобально не зрізаються (там можуть бути валідні committed-картинки) — тому зрізаємо лише
-// AVIF-генерацію, мінімізація оригіналу й далі працює як зазвичай.
+// `--avif` пропускає build-outputs, wrapper-директорії та канонічну Tauri-локацію
+// іконок: `dist`/`build` (Vite/webpack/Rollup), `android`/`ios` (Capacitor copy
+// образів у нативні проєкти — native runtime не читає AVIF і Capacitor затирає
+// файли при `cap sync`), `.output`/`.nuxt`/`.cache` (Nuxt і generic кеші),
+// `src-tauri/icons` (Tauri вбудовує ці PNG/`.icns`/`.ico` через
+// `tauri::generate_context!`, AVIF-сусід безглуздий).
+// Більшість уже зрізає global ignore (`**/dist/**`, `**/.*/**`, `**/src-tauri/icons/**`),
+// але `build`, `android`, `ios` глобально не зрізаються (там можуть бути валідні
+// committed-картинки) — тому зрізаємо лише AVIF-генерацію, мінімізація оригіналу
+// далі працює як зазвичай. Запис `src-tauri/icons` лишається й тут — друга лінія
+// оборони, якщо хтось перевизначить default-ignore через зміну глобів.
 // Перевіряється по segment-у відносного шляху, щоб не ловити false-positive типу `dist-doc/`.
-const AVIF_IGNORE_PATH_RE = /(?:^|[/\\])(?:dist|build|android|ios|\.output|\.nuxt|\.cache)(?:[/\\]|$)/i
+const AVIF_IGNORE_PATH_RE =
+  /(?:^|[/\\])(?:dist|build|android|ios|\.output|\.nuxt|\.cache|src-tauri[/\\]icons)(?:[/\\]|$)/i
 
 /**
  * Кеш «найближчий package.json вище за каталог із disable-avif». Узгоджено з

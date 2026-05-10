@@ -19,7 +19,7 @@
     },
     "npm": {
       "name": "@nitra/minify-image",
-      "version": "3.4.0",
+      "version": "3.5.0",
       "bin": "src/index.js",
       "dependencies": {
         "calc-percent": "^1.0.1",

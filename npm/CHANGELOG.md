@@ -4,6 +4,18 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
+## [3.6.0] - 2026-05-10
+
+### Added
+
+- `**/src-tauri/icons/**` тепер у дефолтному exclude-списку поряд з
+  `node_modules`/`vendor`/`test`/`dist`/`**/.*/**`. Tauri фіксує цей шлях
+  як канонічну локацію іконок (генерується `tauri icon` CLI); попередня
+  поведінка — palette-квантизація RGBA-PNG — ламала
+  `tauri::generate_context!` (panic «icon … is not RGBA»). За тим самим
+  принципом сегмент `src-tauri/icons` додано до AVIF-skip-сету (`.icns`/`.ico`
+  поряд з PNG однаково AVIF-генерувати немає сенсу).
+
 ## [3.5.0] - 2026-05-10
 
 ### Changed
