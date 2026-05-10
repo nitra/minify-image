@@ -1,0 +1,9 @@
+docs/adr/_inbox/20260510-183045-d094d8d9.md
+  ai_agent 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "0271e7dd93cb65248b8674ed67e76430867d7711",
+  "prompts": {}
+}
