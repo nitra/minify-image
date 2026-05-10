@@ -15,6 +15,7 @@
   "skills": [
     "fix",
     "lint",
+    "llm-patch",
     "publish-telegram",
     "taze"
   ]

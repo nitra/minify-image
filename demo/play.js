@@ -36,7 +36,7 @@ console.log()
 console.log(`Step 2: запуск CLI`)
 console.log(`        bun ${cli} --src=${workDir} --write`)
 console.log('---')
-const result = spawnSync('bun', [cli, `--src=${workDir}`, '--write'], { stdio: 'inherit' }) // eslint-disable-line sonarjs/no-os-command-from-path -- bun береться з PATH у dev-середовищі, аналогічно решті скриптів проєкту
+const result = spawnSync('bun', [cli, `--src=${workDir}`, '--write'], { stdio: 'inherit' })
 console.log('---')
 console.log()
 
