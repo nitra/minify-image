@@ -1,0 +1,38 @@
+npm/README.md
+  s_990c7018b99b1a::t_6690f40d556be2 93-110
+  s_990c7018b99b1a::t_14bb79c3756e94 23-28
+.cspell.json
+  s_990c7018b99b1a::t_2bad5e8a87da87 30
+npm/src/index.js
+  s_990c7018b99b1a::t_bda16faa6dd6a8 79-81
+  s_990c7018b99b1a::t_3c857113def52d 78,87-95
+  s_990c7018b99b1a::t_dfafc0101050b1 381
+  s_990c7018b99b1a::t_16542d73230077 40-41
+  s_990c7018b99b1a::t_0a511f00e0c1c2 377-380,382-387,389-390
+npm/package.json
+  s_990c7018b99b1a::t_37d70fa1eaea60 3
+npm/CHANGELOG.md
+  s_990c7018b99b1a::t_cf44d60733be9e 9-17
+  s_990c7018b99b1a::t_f797bec1ff18d9 7,18
+demo/test/tauri-icons-default-ignore.test.js
+  s_990c7018b99b1a::t_c2c0b54043650b 18
+  s_990c7018b99b1a::t_9417f7a2374524 52
+  s_990c7018b99b1a::t_c93715b1fd6b10 1-17,19-30,32-51,53-91
+  s_990c7018b99b1a::t_32f70d23ed45a0 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "773a1d07d63f147a3dd1013357b20c9df93c58fe",
+  "prompts": {},
+  "sessions": {
+    "s_990c7018b99b1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d094d8d9-643b-4e45-a379-23c9e6d2a594",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
