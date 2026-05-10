@@ -1,0 +1,40 @@
+docs/adr/_inbox/20260509-072951-b712831f.md
+  s_990c7018b99b1a::t_5f1d9d32a377b4 12,32
+package.json
+  s_990c7018b99b1a::t_2aef55eecb82f9 23
+docs/adr/_inbox/20260509-074307-9c2ae99e.md
+  s_990c7018b99b1a::t_5f1d9d32a377b4 12
+docs/adr/_inbox/20260510-173915-d094d8d9.md
+  ai_agent 1-23
+demo/package.json
+  s_990c7018b99b1a::t_2aef55eecb82f9 9-10
+demo/play.js
+  s_990c7018b99b1a::t_5f1d9d32a377b4 39
+npm/package.json
+  s_990c7018b99b1a::t_49dd27286718b0 3
+  s_990c7018b99b1a::t_2aef55eecb82f9 28,30-31
+bun.lock
+  ai_agent 10,16-17,27,29-30,116,280,538,558,634,654,658,668,746,760,924,936,1132,1236-1237,1260-1262
+npm/CHANGELOG.md
+  s_990c7018b99b1a::t_8514ba38485562 7-19
+docs/adr/_inbox/20260509-072750-b712831f.md
+  s_990c7018b99b1a::t_5f1d9d32a377b4 12,27
+.n-cursor.json
+  ai_agent 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "55585cb1cc2d15a331891c1e97772c4f039929a5",
+  "prompts": {},
+  "sessions": {
+    "s_990c7018b99b1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d094d8d9-643b-4e45-a379-23c9e6d2a594",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
