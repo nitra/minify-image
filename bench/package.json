@@ -1,0 +1,28 @@
+{
+  "name": "minify-image-bench",
+  "private": true,
+  "description": "Methodologically sound bench of Bun.Image vs sharp",
+  "type": "module",
+  "scripts": {
+    "corpus": "bun download-corpus.mjs",
+    "test": "bun test",
+    "micro": "bun micro.mjs",
+    "e2e": "bun e2e.mjs",
+    "report": "bun report.mjs",
+    "all": "bun corpus && bun test && bun micro && bun e2e && bun report"
+  },
+  "dependencies": {
+    "calc-percent": "^1.0.1",
+    "consola": "^3.4.2",
+    "p-limit": "^7.3.0",
+    "pretty-bytes": "^7.1.0",
+    "sharp": "^0.34.5",
+    "ssim.js": "^3.5.0",
+    "svgo": "^4.0.1",
+    "tinyglobby": "^0.2.16"
+  },
+  "engines": {
+    "bun": ">=1.3",
+    "node": ">=22"
+  }
+}

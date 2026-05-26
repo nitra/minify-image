@@ -1,5 +1,6 @@
 {
   "gitignore": true,
+  "ignores": ["docs/adr/_inbox/*.md"],
   "config": {
     "default": true,
     "MD013": false,
