@@ -1,0 +1,117 @@
+bench/e2e-cli-bun-image.mjs
+  s_eec064c6c8d651::t_6be2069455f12f 8,11-16,19,99,156-158,165,174,186-193,208-209,220
+  s_eec064c6c8d651::t_74fe0d97def8f8 63-67
+  s_0cb6ffea084f3c::t_f8adb0d39b1ef8 31,59
+bench/micro.mjs
+  s_0cb6ffea084f3c::t_3f43267ffb2cca 1-16,18-21,23-27,29-32,34-92,95-98,101-113
+  s_eec064c6c8d651::t_77ed7a83fc88bc 93-94
+  s_eec064c6c8d651::t_6a83e51f80fa65 17,22,28,33,99-100
+docs/superpowers/specs/2026-05-26-bun-image-vs-sharp-benchmark-design.md
+  s_0cb6ffea084f3c::t_f5c4892348b1a4 1-24,26-42,49-99,101-131,133-139
+  s_eec064c6c8d651::t_b381bb437cf20f 43-48
+  s_eec064c6c8d651::t_205ff9a525dfde 25,132
+  s_eec064c6c8d651::t_5d77942e1069b5 100
+.markdownlint-cli2.jsonc
+  s_eec064c6c8d651::t_9e6caef0cdd458 3
+bench/report.mjs
+  s_eec064c6c8d651::t_88e5cf227599ab 14,24-30,33,42-46,48,50-55,58,62,65,67-70,72-73,80-93,95-101,103-120,123
+  s_0cb6ffea084f3c::t_8becc9e73d7847 1-11,13,15-16,22,31-32,34-38,41,47,56-57,59-61,76-77,121-122,124
+  s_eec064c6c8d651::t_5d47f29aa13641 12,17-21,23,39-40,66,74-75
+  s_eec064c6c8d651::t_b381bb437cf20f 49,63-64,78-79
+  s_eec064c6c8d651::t_ab985622137918 102
+  s_eec064c6c8d651::t_15e8fddb964178 71
+  s_eec064c6c8d651::t_acda01a3cdb3d7 94
+bench/quality.mjs
+  s_0cb6ffea084f3c::t_78d76cde4e5360 51,53-56
+  s_0cb6ffea084f3c::t_960124a071ca26 68
+  s_0cb6ffea084f3c::t_362a7c24284431 1-14,17-18,21-32,36-50,52,57-62,66-67,69-84,86-90
+  s_eec064c6c8d651::t_cfacad0fd7211b 15-16,19-20,33-35,63-65,85
+bench/codecs/sharp.mjs
+  s_0cb6ffea084f3c::t_4d4443bbfcffec 1-27
+bench/download-corpus.mjs
+  s_0cb6ffea084f3c::t_ee7aa05ff7b15d 7-8
+  s_0cb6ffea084f3c::t_7218ded1d73b8d 1-6,9-30
+docs/adr/_inbox/20260526-bun-image-methodological-recheck.md
+  s_eec064c6c8d651::t_83446baf60a676 2,4,6,14,21,25-27
+  s_eec064c6c8d651::t_205ff9a525dfde 8,16,22
+  s_eec064c6c8d651::t_67845e50162aec 1,3,5,7,9-13,15,17-20,23-24,28
+bench/codecs/bun-image.mjs
+  s_0cb6ffea084f3c::t_09ac19bdfb898c 1-23
+eslint.config.js
+  s_eec064c6c8d651::t_ef68424d0894c3 8-15
+  s_eec064c6c8d651::t_17fa5deb2d3789 5
+bench/quality.test.mjs
+  s_eec064c6c8d651::t_f57afe10c9b19c 18
+  s_0cb6ffea084f3c::t_d583359e5f5b6e 1-17,19-26
+.github/workflows/git-ai.yml
+  s_eec064c6c8d651::t_0346a3a835d51d 7-10
+docs/superpowers/plans/2026-05-26-bun-image-vs-sharp-benchmark.md
+  s_eec064c6c8d651::t_b381bb437cf20f 95,102-103,105,1195-1197,1288-1290,1295-1297
+  s_0cb6ffea084f3c::t_4ced03b8f50deb 1-44,46-94,96-101,104,106-129,131-189,191-278,280-361,363-455,457-609,611-753,755-1010,1012-1176,1178-1194,1198-1287,1291-1294,1298-1325,1327-1336,1338-1377,1379-1391,1393-1396
+  s_eec064c6c8d651::t_205ff9a525dfde 45,130,190,279,362,456,610,754,1011,1177,1326,1337,1378,1392
+bench/codecs/codecs.test.mjs
+  s_0cb6ffea084f3c::t_9e9092a961a2c8 50-51,53-64
+  s_0cb6ffea084f3c::t_fddada4c80d3e0 1-2,5-28
+  s_0cb6ffea084f3c::t_406d4bfab43de6 29-49
+  s_eec064c6c8d651::t_6ad62b407a0109 3-4
+  s_eec064c6c8d651::t_4683099f6380a3 52
+docs/bench/2026-05-26-bun-image-vs-sharp.md
+  s_eec064c6c8d651::t_0a15c12bd239a7 23,34,45,56
+  s_0cb6ffea084f3c::t_24c9bfad94807e 1-15,22,24-26,33,35-37,44,46-48,55,57-63,68-81
+  s_eec064c6c8d651::t_b381bb437cf20f 16-21,27-32,38-43,49-54,64-67,84-90,96,104-105,107
+  s_eec064c6c8d651::t_3526b286ef8c29 82-83,91-95,97-103,106,108
+  s_eec064c6c8d651::t_205ff9a525dfde 109
+.github/workflows/clean-merged-branch.yml
+  s_eec064c6c8d651::t_fb85a9ce2f9bf5 11-14
+bench/package.json
+  s_eec064c6c8d651::t_b381bb437cf20f 5,23-26
+  s_0cb6ffea084f3c::t_977a840ee9d654 1-4,6-22,27-28
+bench/codecs/index.mjs
+  s_0cb6ffea084f3c::t_e630354fba2d83 1-43
+bench/e2e.mjs
+  s_eec064c6c8d651::t_e141b41f5aab47 69
+  s_0cb6ffea084f3c::t_88198c8f91da2b 1-68,70-114
+docs/adr/_inbox/20260526-054228-bun-image-benchmark.md
+  s_eec064c6c8d651::t_205ff9a525dfde 8,14,23
+  s_269e236b253fed::t_2c70110761fcfc 1-7,9-13,15-22,24-27
+bench/README.md
+  s_0cb6ffea084f3c::t_7f4e7cad74f827 1-25
+.github/workflows/clean-ga-workflows.yml
+  s_eec064c6c8d651::t_fb85a9ce2f9bf5 10-13
+.cspell.json
+  s_eec064c6c8d651::t_bcfaff1c81359d 84-143
+  s_eec064c6c8d651::t_d8adb095f972db 35-38,40-56
+  s_eec064c6c8d651::t_f38df720692c8f 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d1e5625182843f4814384c91011a6adad6670ae6",
+  "prompts": {},
+  "sessions": {
+    "s_0cb6ffea084f3c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96a497a2-4c52-4dc7-b53e-46baed745bbb",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_269e236b253fed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "041716ad-115a-45b0-8305-e07cc1e41d9e",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    },
+    "s_eec064c6c8d651": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce9e9fce-1fa3-4576-824b-bb273fccb0df",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "vitaliytv <v@nitra.ai>"
+    }
+  }
+}
