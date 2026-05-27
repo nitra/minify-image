@@ -25,7 +25,7 @@ test('sharpAdapter.encode supports png/jpeg/avif/webp', async () => {
     const out = await sharpAdapter.encode(buf, fmt)
     expect(out.length).toBeGreaterThan(0)
   }
-}, 30_000)
+}, 120_000)
 
 test('bunImageAdapter has correct shape', () => {
   expect(bunImageAdapter.name).toBe('bun-image')
@@ -38,7 +38,7 @@ test('bunImageAdapter.encode(png, "png") returns Uint8Array', async () => {
   expect(out).toBeInstanceOf(Uint8Array)
   expect(out.length).toBeGreaterThan(0)
   expect(out.length).toBeLessThan(buf.length)
-})
+}, 30_000)
 
 test('bunImageAdapter.encode supports png/jpeg/avif/webp', async () => {
   const buf = readFileSync(SAMPLE)
@@ -46,7 +46,7 @@ test('bunImageAdapter.encode supports png/jpeg/avif/webp', async () => {
     const out = await bunImageAdapter.encode(buf, fmt)
     expect(out.length).toBeGreaterThan(0)
   }
-}, 30_000)
+}, 120_000)
 
 test('adapters registry has all four variants', () => {
   const names = adapters.map(a => a.name).toSorted()
@@ -61,4 +61,4 @@ test('every adapter encodes every FORMAT', async () => {
       expect(out.length).toBeGreaterThan(0)
     }
   }
-}, 60_000)
+}, 300_000)

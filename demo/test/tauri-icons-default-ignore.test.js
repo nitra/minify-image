@@ -42,7 +42,9 @@ const rgbaPng = () => {
       pixels[i + 3] = 200
     }
   }
-  return sharp(pixels, { raw: { channels: 4, height: size, width: size } }).png().toBuffer()
+  return sharp(pixels, { raw: { channels: 4, height: size, width: size } })
+    .png()
+    .toBuffer()
 }
 
 /**

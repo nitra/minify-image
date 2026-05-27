@@ -1,26 +1,45 @@
-// Per-codec micro-bench. Для кожного (adapter × format × kodakNN):
+// Per-codec micro-bench. Для кожного (adapter × format × файл):
 //   N=10 прогонів encode(buf, fmt), відкидаємо перший (JIT warmup), median+p95.
 //   Для lossy (jpeg/avif/webp): SSIM + DSSIM проти оригінального RGBA.
-// Output: bench/results/micro-<iso>.json
+// Output: bench/results/micro-<label>-<iso>.json
+//
+// CLI:
+//   bun micro.mjs                       — Kodak suite (default)
+//   bun micro.mjs --corpus=<dir>        — будь-яка директорія з PNG
+//   bun micro.mjs --corpus=<dir> --label=<name>  — кастомний label у JSON
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join, resolve } from 'node:path'
+import { parseArgs } from 'node:util'
 import { adapters, FORMATS } from './codecs/index.mjs'
 import { computeDSSIM, computeSSIM } from './quality.mjs'
 
-const CORPUS = new URL('corpus/kodak/', import.meta.url).pathname
+const { values } = parseArgs({
+  options: {
+    corpus: { type: 'string' },
+    label: { type: 'string' }
+  }
+})
+
+const DEFAULT_CORPUS = new URL('corpus/kodak/', import.meta.url).pathname
+const CORPUS = values.corpus ? resolve(values.corpus) : DEFAULT_CORPUS
+const CORPUS_LABEL = values.label ?? (values.corpus ? basename(CORPUS) : 'kodak')
 const RESULTS_DIR = new URL('results/', import.meta.url).pathname
 const N_RUNS = 10
 
 mkdirSync(RESULTS_DIR, { recursive: true })
 
 if (!existsSync(CORPUS)) {
-  throw new Error(`Corpus missing: ${CORPUS}. Run \`bun download-corpus.mjs\` first.`)
+  throw new Error(`Corpus missing: ${CORPUS}. Run \`bun download-corpus.mjs\` first or pass --corpus=<dir>.`)
 }
 
 const corpusFiles = readdirSync(CORPUS)
-  .filter(f => f.endsWith('.png'))
+  .filter(f => f.toLowerCase().endsWith('.png'))
   .toSorted()
   .map(f => ({ buf: readFileSync(join(CORPUS, f)), name: f }))
+
+if (corpusFiles.length === 0) {
+  throw new Error(`No PNG files in ${CORPUS}`)
+}
 
 console.log(`Corpus: ${corpusFiles.length} files. Backend: ${Bun.Image.backend}.`)
 
@@ -37,7 +56,8 @@ const p95 = arr => {
 const results = {
   backend: Bun.Image.backend,
   bunVersion: Bun.version,
-  corpus: 'kodak (24 PNG)',
+  corpus: `${CORPUS_LABEL} (${corpusFiles.length} PNG)`,
+  corpusPath: CORPUS,
   meta: {
     nRuns: N_RUNS,
     platform: `${process.platform}-${process.arch}`,
@@ -108,6 +128,7 @@ for (const adapter of adapters) {
 }
 
 results.meta.finishedAt = new Date().toISOString()
-const outPath = join(RESULTS_DIR, `micro-${results.meta.startedAt.replaceAll(':', '-').replace(/\..+/, '')}.json`)
+const isoSafe = results.meta.startedAt.replaceAll(':', '-').replace(/\..+/, '')
+const outPath = join(RESULTS_DIR, `micro-${CORPUS_LABEL}-${isoSafe}.json`)
 writeFileSync(outPath, JSON.stringify(results, null, 2))
 console.log(`\nResults: ${outPath}`)

@@ -10,26 +10,19 @@ import { exit } from 'node:process'
 import { parseArgs } from 'node:util'
 import pLimit from 'p-limit'
 import prettyBytes from 'pretty-bytes'
-import sharp from 'sharp'
 import { optimize as svgoOptimize } from 'svgo'
 import { glob } from 'tinyglobby'
 
-// У batch-режимі повторного доступу до тих самих декодованих зображень не буває —
-// LRU sharp лише з'їдає пам'ять. Паралелізм даємо назовні через p-limit (рекомендований
-// підхід sharp для batch-обробки): на кожну операцію — 1 потік, на CPU — N операцій.
-sharp.cache(false)
-sharp.concurrency(1)
-
 consola.info('START MINIFY IMAGES')
 
-const HELP_TEXT = `Minify images (PNG, JPEG, GIF, SVG)
+const HELP_TEXT = `Minify images (PNG, JPEG, SVG)
   Minify if compressed size lower than 15%
 
 Options:
   --write           If not set, only estimate size difference
   --src=<dir>       The directory to process. (default: ".")
   --avif            With --write, create <name>.<ext>.avif (quality 40) next
-                    to each raster image (PNG/JPEG/GIF) before compressing the
+                    to each raster image (PNG/JPEG) before compressing the
                     original. Skipped inside dist/, build/, android/, ios/,
                     .output/, .nuxt/, .cache/. Also skipped per-package when
                     package.json contains
@@ -312,13 +305,12 @@ const METADATA_PLACEHOLDER_REPLACE_RE = new RegExp(
   'g'
 )
 
-// Sharp за замовчуванням викидає метадані (EXIF, tEXt). `mozjpeg: true` уже вмикає
-// `optimiseScans` (≡ progressive); `progressive: true` залишаємо явно для наочності.
+// Bun.Image (Bun 1.3+, backend: system = Apple ImageIO on macOS).
+// `effort` ігнорується silently у Bun.Image; `palette: true` — ключова PNG-оптимізація.
 const compressors = {
-  '.gif': buf => sharp(buf, { animated: true }).gif({ effort: 10 }).toBuffer(),
-  '.jpeg': buf => sharp(buf).jpeg({ mozjpeg: true, progressive: true }).toBuffer(),
-  '.jpg': buf => sharp(buf).jpeg({ mozjpeg: true, progressive: true }).toBuffer(),
-  '.png': buf => sharp(buf).png({ compressionLevel: 9, effort: 10, palette: true }).toBuffer(),
+  '.jpeg': async buf => Buffer.from(await new Bun.Image(buf).jpeg({ progressive: true, quality: 75 }).bytes()),
+  '.jpg': async buf => Buffer.from(await new Bun.Image(buf).jpeg({ progressive: true, quality: 75 }).bytes()),
+  '.png': async buf => Buffer.from(await new Bun.Image(buf).png({ compressionLevel: 9, palette: true }).bytes()),
   '.svg': buf => {
     const text = buf.toString('utf8')
     if (isSvgSprite(text)) return buf
@@ -372,7 +364,8 @@ const compressors = {
 }
 
 // AVIF створюємо тільки для растрових форматів — для SVG (вектор) це безглуздо.
-const AVIF_SOURCE_EXTS = new Set(['.gif', '.jpeg', '.jpg', '.png'])
+// GIF видалено в 4.0 (Bun.Image не має GIF encoder).
+const AVIF_SOURCE_EXTS = new Set(['.jpeg', '.jpg', '.png'])
 
 // `--avif` пропускає build-outputs, wrapper-директорії та канонічну Tauri-локацію
 // іконок: `dist`/`build` (Vite/webpack/Rollup), `android`/`ios` (Capacitor copy
@@ -473,7 +466,7 @@ const isAvifOptedOut = imagePath => {
  */
 const writeAvif = async (image, avifPath, imagePath) => {
   try {
-    const buf = await sharp(image).avif({ quality: 40 }).toBuffer()
+    const buf = Buffer.from(await new Bun.Image(image).avif({ quality: 40 }).bytes())
     writeFileSync(avifPath, buf)
     consola.info(`${imagePath} → ${avifPath} avif size: ${prettyBytes(buf.length)}`)
   } catch {
@@ -546,6 +539,10 @@ const tryCacheHit = async (imagePath, relPath, mtimeCache, hashCache, avifPath) 
  */
 const processOne = async (imagePath, mtimeCache, hashCache) => {
   const ext = extname(imagePath).toLowerCase()
+  if (ext === '.gif') {
+    consola.warn(`GIF compression removed in 4.0, file skipped: ${relative(srcAbs, imagePath)}`)
+    return { compressed: 0, orig: 0 }
+  }
   const compressor = compressors[ext]
   if (!compressor) return { compressed: 0, orig: 0 }
 

@@ -102,13 +102,13 @@ Each component links to the test that exercises it. Cache contracts and the
 SVG branch are heavily covered; new branches must add a test next to one
 of these files.
 
-| Component | Test file |
-| --- | --- |
-| Argument parser, globWalker, processOne, rasterCompress (golden path) | [demo/test/run.test.js](../../demo/test/run.test.js) — `estimate-режим` + `--write режим` blocks, vendor/test/dist exclusion |
-| svgCompress | [demo/test/run.test.js](../../demo/test/run.test.js) — `SVG: ...` blocks (sprite skip, license-bearing comments, `<metadata>` preservation, attribution markers, CC0 + © edge case) |
-| avifGen + avifResolver | [demo/test/avif-opt-out.test.js](../../demo/test/avif-opt-out.test.js) — opt-out fixture with nested workspaces, broken package.json tolerance, `disable-avif: false` no-op |
-| Default ignore for `src-tauri/icons/**` (glob + AVIF segment) | [demo/test/tauri-icons-default-ignore.test.js](../../demo/test/tauri-icons-default-ignore.test.js) |
-| Hash cache + mtime cache contract (cold start, hit/miss, lifetime savings) | [demo/test/run.test.js](../../demo/test/run.test.js) — `--write …наповнює cache` + `--write …перезаписує файл коли економія >15%` |
+| Component                                                                  | Test file                                                                                                                                                                           |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Argument parser, globWalker, processOne, rasterCompress (golden path)      | [demo/test/run.test.js](../../demo/test/run.test.js) — `estimate-режим` + `--write режим` blocks, vendor/test/dist exclusion                                                        |
+| svgCompress                                                                | [demo/test/run.test.js](../../demo/test/run.test.js) — `SVG: ...` blocks (sprite skip, license-bearing comments, `<metadata>` preservation, attribution markers, CC0 + © edge case) |
+| avifGen + avifResolver                                                     | [demo/test/avif-opt-out.test.js](../../demo/test/avif-opt-out.test.js) — opt-out fixture with nested workspaces, broken package.json tolerance, `disable-avif: false` no-op         |
+| Default ignore for `src-tauri/icons/**` (glob + AVIF segment)              | [demo/test/tauri-icons-default-ignore.test.js](../../demo/test/tauri-icons-default-ignore.test.js)                                                                                  |
+| Hash cache + mtime cache contract (cold start, hit/miss, lifetime savings) | [demo/test/run.test.js](../../demo/test/run.test.js) — `--write …наповнює cache` + `--write …перезаписує файл коли економія >15%`                                                   |
 
 ## Decisions
 

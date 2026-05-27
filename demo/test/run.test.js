@@ -19,9 +19,15 @@ const cacheFileName = '.n-minify-image.tsv'
  * @returns {Promise<{ exitCode: number, stdout: string }>} результат запуску.
  */
 const runCli = async (args, cwd) => {
-  const proc = Bun.spawn(['bun', cli, ...args], { cwd, stdout: 'pipe', stderr: 'pipe' })
-  const [stdout, exitCode] = await Promise.all([new Response(proc.stdout).text(), proc.exited])
-  return { exitCode, stdout }
+  // bun:test встановлює NODE_ENV=test для дочірніх процесів, що змушує consola
+  // глушити info-логи (вона вважає, що в тестах вивід зайвий). Підміняємо на
+  // production, щоб тести бачили реальний CLI-вивід.
+  const env = { ...process.env, NODE_ENV: 'production' }
+  const proc = Bun.spawn(['bun', cli, ...args], { cwd, env, stdout: 'pipe', stderr: 'pipe' })
+  const stdout = await new Response(proc.stdout).text()
+  const stderr = await new Response(proc.stderr).text()
+  const exitCode = await proc.exited
+  return { exitCode, stderr, stdout }
 }
 
 /**
@@ -66,10 +72,10 @@ const NON_ZERO_SAVING_RE = /Images optimized, saving: [^,]+, [1-9]\d*%/
 const SHA1_HEX_RE = /^[\da-f]{40}$/
 
 /** Файли-фікстури, які CLI має знайти за глобами (vendor/* виключено через ignore). */
-const expectedFiles = ['ready.png', 'ready.Jpeg', 'big_jpeg_req_6.jpg', 'minified.gif', 'minified.svg']
+const expectedFiles = ['ready.png', 'ready.Jpeg', 'big_jpeg_req_6.jpg', 'minified.svg']
 
 test('estimate-режим: реально проганяє компресор для всіх форматів', async () => {
-  const { exitCode, stdout } = await runCli([`--src=${filesDir}`], here)
+  const { exitCode, stderr, stdout } = await runCli([`--src=${filesDir}`], here)
 
   expect(exitCode).toBe(0)
 
@@ -85,6 +91,11 @@ test('estimate-режим: реально проганяє компресор д
   expect(stdout).toContain('All image size:')
   expect(stdout).toContain('Estimated saving:')
   expect(stdout).not.toContain('Images optimized')
+
+  // 4.0: GIF support removed — кожен .gif видає warn у stderr і не процеситься
+  expect(stderr).toContain('GIF compression removed in 4.0')
+  expect(stderr).toContain('minified.gif')
+  expect(stdout).not.toContain('minified.gif original size:')
 }, 60_000)
 
 test('--write режим: проганяє компресор для всіх файлів і наповнює cache', async () => {
@@ -134,6 +145,13 @@ test('--write режим: проганяє компресор для всіх ф
     expect(statSync(join(workDir, 'vendor', 'ready.svg')).size).toBe(
       statSync(join(filesDir, 'vendor', 'ready.svg')).size
     )
+
+    // GIF підтримку видалено в 4.0: minified.gif має лишитися байт-в-байт,
+    // а у cache TSV для нього не повинно бути запису
+    const gifBefore = readFileSync(join(filesDir, 'minified.gif'))
+    const gifAfter = readFileSync(join(workDir, 'minified.gif'))
+    expect(gifAfter.equals(gifBefore)).toBe(true)
+    expect(tsvLines.some(line => line.startsWith('minified.gif\t'))).toBe(false)
 
     // CLI має звітувати ненульову економію (через ready.png)
     expect(first.stdout).toMatch(NON_ZERO_SAVING_RE)

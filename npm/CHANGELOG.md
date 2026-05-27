@@ -4,6 +4,28 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
+## [4.0.0] - 2026-05-27
+
+### Changed
+
+- Кодек PNG/JPEG/AVIF замінено з `sharp` на вбудований `Bun.Image` (Bun ≥ 1.3).
+  На macOS (Apple ImageIO backend) — у 4–9× швидше за sharp, розмір файлів
+  PNG/JPEG порівнюваний або менший. AVIF: паритет на фото-контенті, +38% на
+  flat UI-контенті — прийнятний trade-off за повне видалення native binary.
+- `sharp` видалено з `dependencies`. Заміряно `bun add @nitra/minify-image` у
+  чистій директорії (macOS arm64): з sharp — 28 MB, без — 11 MB,
+  **delta −17 MB**. На Linux/Windows економія зазвичай більша через multi-arch
+  libvips binaries у `@img/sharp-libvips-*`.
+- Параметри стиснення: PNG `palette: true, compressionLevel: 9`; JPEG `quality: 75,
+  progressive: true`; AVIF `quality: 40`.
+
+### Removed
+
+- Підтримку GIF (`--gif`/`.gif`) видалено: `Bun.Image` не має GIF encoder.
+  Файли `.gif` зустрічає CLI з `consola.warn` і пропускає без обробки.
+  Рекомендація для наявних GIF: конвертуйте в WebP/MP4 або стискайте
+  окремо через `gifsicle`.
+
 ## [3.6.0] - 2026-05-10
 
 ### Added
