@@ -4,6 +4,14 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
+## [4.0.1] - 2026-06-20
+
+### Added
+
+- CLI-прапорець `--json` для read-only аналізу: сканує зображення, читає
+  `.n-minify-image.tsv`, рахує поточний SHA-1 і повертає JSON із
+  `processed`/`needsCompression` без компресії та без запису cache-файлів.
+
 ## [4.0.0] - 2026-05-27
 
 ### Changed

@@ -18,6 +18,8 @@ npx @nitra/minify-image --src=.
 
 ```text
 --write           If not set, only estimate size difference
+--json            Print read-only JSON report: scanned files vs
+                  .n-minify-image.tsv. No files are compressed or written.
 --src directory   The directory to process.
 --avif            With --write, create <name>.<ext>.avif (quality 40) next
                   to each raster image (PNG/JPEG/GIF) before compressing the
@@ -30,6 +32,21 @@ npx @nitra/minify-image --src=.
                   **/.*/**) залишаються активними.
 -h, --help        Print this usage guide.
 ```
+
+## JSON report
+
+`--json` is a read-only inventory mode for automation:
+
+```bash
+npx @nitra/minify-image --src=. --json
+```
+
+It scans the same image globs, reads `<src>/.n-minify-image.tsv`, computes the
+current SHA-1 for supported formats, and prints one JSON document to stdout.
+For each file, `processed: true` means the current file content matches the
+TSV entry created by a previous `--write` run; `needsCompression` is `true`
+when that current TSV match is missing. The mode does not compress images and
+does not write either `.n-minify-image.tsv` or the local mtime cache.
 
 ## AVIF companion files
 

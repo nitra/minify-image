@@ -3,16 +3,16 @@
 // Призначений ВИКЛЮЧНО для e2e-замірів; не для production.
 import calcPercent from 'calc-percent'
 import { consola } from 'consola'
-import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
-import { dirname, extname, join, relative, resolve } from 'node:path'
+import { extname, relative, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import pLimit from 'p-limit'
 import prettyBytes from 'pretty-bytes'
 import sharp from 'sharp'
 import { optimize as svgoOptimize } from 'svgo'
 import { glob } from 'tinyglobby'
+import { hashBuffer, loadHashCache, loadMtimeCache, saveHashCache, saveMtimeCache } from '../npm/src/cache.js'
 
 sharp.cache(false)
 sharp.concurrency(1)
@@ -52,72 +52,6 @@ const globOptions = {
     '**/src-tauri/icons/**',
     ...options.ignore
   ]
-}
-
-const HASH_CACHE_FILE = '.n-minify-image.tsv'
-const MTIME_CACHE_FILE = 'node_modules/.cache/@nitra/minify-image/mtime.tsv'
-
-// eslint-disable-next-line sonarjs/hashing
-const hashBuffer = buf => createHash('sha1').update(buf).digest('hex')
-
-const compareByPath = ([a], [b]) => {
-  if (a < b) return -1
-  if (a > b) return 1
-  return 0
-}
-
-const loadMtimeCache = () => {
-  const cache = new Map()
-  try {
-    const text = readFileSync(join(srcAbs, MTIME_CACHE_FILE), 'utf8')
-    for (const line of text.split('\n')) {
-      if (!line) continue
-      const cols = line.split('\t')
-      if (cols.length !== 3) continue
-      const [path, mtime, size] = cols
-      if (!path || !mtime || !size) continue
-      cache.set(path, { mtime: Number(mtime), size: Number(size) })
-    }
-  } catch {
-    /* cold start */
-  }
-  return cache
-}
-
-const loadHashCache = () => {
-  const cache = new Map()
-  try {
-    const text = readFileSync(join(srcAbs, HASH_CACHE_FILE), 'utf8')
-    for (const line of text.split('\n')) {
-      if (!line) continue
-      const cols = line.split('\t')
-      if (cols.length !== 4) continue
-      const [path, hash, originalSize, size] = cols
-      if (!path || !hash || !size) continue
-      const sizeNum = Number(size)
-      cache.set(path, { hash, originalSize: Number(originalSize) || sizeNum, size: sizeNum })
-    }
-  } catch {
-    /* cold start */
-  }
-  return cache
-}
-
-const saveMtimeCache = cache => {
-  const file = join(srcAbs, MTIME_CACHE_FILE)
-  mkdirSync(dirname(file), { recursive: true })
-  const entries = [...cache.entries()].toSorted(compareByPath)
-  const lines = entries.map(([p, { mtime, size }]) => `${p}\t${mtime}\t${size}`)
-  writeFileSync(file, lines.length ? `${lines.join('\n')}\n` : '')
-}
-
-const saveHashCache = cache => {
-  const entries = [...cache.entries()].toSorted(compareByPath)
-  const lines = entries
-    .filter(([, { hash }]) => hash)
-    .map(([p, { hash, originalSize, size }]) => `${p}\t${hash}\t${originalSize}\t${size}`)
-  if (lines.length === 0) return
-  writeFileSync(join(srcAbs, HASH_CACHE_FILE), `${lines.join('\n')}\n`)
 }
 
 // Bun.Image compressors (паритет з npm/src/index.js де можливо).
@@ -207,8 +141,8 @@ const processOne = async (imagePath, mtimeCache, hashCache) => {
   return { compressed: compressedDelta, orig: image.length }
 }
 
-const mtimeCache = options.write ? loadMtimeCache() : null
-const hashCache = options.write ? loadHashCache() : null
+const mtimeCache = options.write ? loadMtimeCache(srcAbs) : null
+const hashCache = options.write ? loadHashCache(srcAbs) : null
 const limit = pLimit(availableParallelism())
 
 const allImages = await glob(['**/*.{png,jpg,jpeg,gif,svg}'], globOptions)
@@ -218,8 +152,8 @@ for (const r of results) {
   stats.orig += r.orig
   stats.compressed += r.compressed
 }
-if (mtimeCache) saveMtimeCache(mtimeCache)
-if (hashCache) saveHashCache(hashCache)
+if (mtimeCache) saveMtimeCache(srcAbs, mtimeCache)
+if (hashCache) saveHashCache(srcAbs, hashCache)
 
 const savedPercent = stats.orig > 0 ? calcPercent(stats.compressed, stats.orig) : 0
 consola.info(`All image size: ${prettyBytes(stats.orig)}`)

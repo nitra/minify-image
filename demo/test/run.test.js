@@ -92,7 +92,7 @@ test('estimate-режим: реально проганяє компресор д
   expect(stdout).toContain('Estimated saving:')
   expect(stdout).not.toContain('Images optimized')
 
-  // 4.0: GIF support removed — кожен .gif видає warn у stderr і не процеситься
+  // 4.0: GIF support removed — кожен .gif видає warn у stderr і не обробляється
   expect(stderr).toContain('GIF compression removed in 4.0')
   expect(stderr).toContain('minified.gif')
   expect(stdout).not.toContain('minified.gif original size:')
@@ -167,6 +167,59 @@ test('--write режим: проганяє компресор для всіх ф
     rmSync(workDir, { force: true, recursive: true })
   }
 }, 120_000)
+
+test('--json режим: звіряє файли з TSV без запису або компресії', async () => {
+  const workDir = mkdtempSync(join(tmpdir(), 'minify-image-json-'))
+  try {
+    const target = join(workDir, 'fat.png')
+    writeFatPng(join(filesDir, 'ready.png'), target, 50_000)
+    const before = readFileSync(target)
+    const cachePath = join(workDir, cacheFileName)
+
+    const cold = await runCli([`--src=${workDir}`, '--json'], workDir)
+    expect(cold.exitCode).toBe(0)
+    expect(existsSync(cachePath)).toBe(false)
+    expect(readFileSync(target).equals(before)).toBe(true)
+
+    const coldReport = JSON.parse(cold.stdout)
+    expect(coldReport.summary).toEqual({ needsCompression: 1, processed: 0, total: 1, unsupported: 0 })
+    expect(coldReport.files).toHaveLength(1)
+    expect(coldReport.files[0]).toMatchObject({
+      cachedHash: null,
+      cachedOriginalSize: null,
+      cachedSize: null,
+      needsCompression: true,
+      path: 'fat.png',
+      processed: false,
+      supported: true,
+      size: before.length
+    })
+    expect(SHA1_HEX_RE.test(coldReport.files[0].hash)).toBe(true)
+
+    await runCliOk([`--src=${workDir}`, '--write'], workDir)
+    const afterWrite = readFileSync(target)
+    expect(afterWrite.length).toBeLessThan(before.length)
+
+    const warm = await runCli([`--src=${workDir}`, '--json'], workDir)
+    expect(warm.exitCode).toBe(0)
+    expect(readFileSync(target).equals(afterWrite)).toBe(true)
+
+    const warmReport = JSON.parse(warm.stdout)
+    expect(warmReport.summary).toEqual({ needsCompression: 0, processed: 1, total: 1, unsupported: 0 })
+    expect(warmReport.files[0]).toMatchObject({
+      needsCompression: false,
+      path: 'fat.png',
+      processed: true,
+      supported: true,
+      size: afterWrite.length
+    })
+    expect(warmReport.files[0].cachedHash).toBe(warmReport.files[0].hash)
+    expect(warmReport.files[0].cachedOriginalSize).toBe(before.length)
+    expect(warmReport.files[0].cachedSize).toBe(afterWrite.length)
+  } finally {
+    rmSync(workDir, { force: true, recursive: true })
+  }
+}, 60_000)
 
 /**
  * Записує SVG із заданим вмістом і ганяє --write поки розмір не зміниться.
