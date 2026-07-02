@@ -18,11 +18,7 @@ export const MTIME_CACHE_FILE = 'node_modules/.cache/@nitra/minify-image/mtime.t
 // eslint-disable-next-line sonarjs/hashing -- cache-ключ, не security-context (колізії атакувати ніхто не буде)
 export const hashBuffer = buf => createHash('sha1').update(buf).digest('hex')
 
-const compareByPath = ([a], [b]) => {
-  if (a < b) return -1
-  if (a > b) return 1
-  return 0
-}
+const compareByPath = ([a], [b]) => a < b ? -1 : 1
 
 /**
  * Локальний mtime-cache з `<src>/node_modules/.cache/@nitra/minify-image/mtime.tsv`.

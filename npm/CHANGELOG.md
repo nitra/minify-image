@@ -4,6 +4,19 @@
 
 Формат — [Keep a Changelog](https://keepachangelog.com/uk/1.1.0/).
 
+## [4.0.2] - 2026-07-02
+
+### Added
+
+- Тести для модуля `cache.js` з покриттям 100%: `hashBuffer`, `loadMtimeCache`,
+  `saveMtimeCache`, `loadHashCache`, `saveHashCache` — включно з legacy-міграцією,
+  guard-гілками та round-trip перевіркою через реальний SHA-1.
+- Тест `computeSSIM` dimension mismatch у `bench/quality.test.mjs`.
+
+### Changed
+
+- `compareByPath` спрощено до тернарного виразу (unreachable `return 0` видалено).
+
 ## [4.0.1] - 2026-06-20
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "@nitra/minify-image",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "minify images (PNG, JPEG, SVG)",
   "keywords": [
     "image",
